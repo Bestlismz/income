@@ -110,14 +110,17 @@ export async function getSharedItems() {
     })) as (SharedItem & { total_paid: number })[]
 }
 
-export async function createSharedItem(item: Omit<SharedItem, 'id' | 'created_at' | 'created_by'>) {
+export async function createSharedItem(item: Omit<SharedItem, 'id' | 'created_by' | 'created_at'>) {
     const supabase = getClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
     const { data, error } = await supabase
         .from('shared_items')
-        .insert({ ...item, created_by: user.id })
+        .insert({
+            ...item,
+            created_by: user.id
+        })
         .select()
         .single()
 
@@ -125,10 +128,23 @@ export async function createSharedItem(item: Omit<SharedItem, 'id' | 'created_at
     return data as SharedItem
 }
 
-export async function addPaymentToSharedItem(itemId: string, amount: number, itemTitle: string, description?: string) {
+export async function addPaymentToSharedItem(
+    itemId: string,
+    amount: number,
+    itemTitle: string,
+    description?: string,
+    periodId?: number,
+    receiptFile?: File
+) {
     const supabase = getClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
+
+    // Upload receipt if provided
+    let receiptUrl: string | undefined
+    if (receiptFile) {
+        receiptUrl = await uploadReceipt(receiptFile)
+    }
 
     // 1. Add payment record
     const { data: payment, error: paymentError } = await supabase
@@ -138,6 +154,7 @@ export async function addPaymentToSharedItem(itemId: string, amount: number, ite
             user_id: user.id,
             amount,
             description: description || null,
+            period_id: periodId || null,
             paid_at: new Date().toISOString()
         })
         .select()
@@ -159,6 +176,8 @@ export async function addPaymentToSharedItem(itemId: string, amount: number, ite
             category: 'Shared Expense',
             description: transactionDescription,
             date: new Date().toISOString().split('T')[0],
+            receipt_url: receiptUrl,
+            period_id: periodId || null,
             created_at: new Date().toISOString()
         })
 
@@ -183,27 +202,95 @@ export async function getSharedItemDetails(itemId: string) {
 
     if (paymentsError) throw paymentsError
 
-    // Get user emails
+    // Get user emails and avatars
     const userIds = [...new Set(payments.map(p => p.user_id))]
     const { data: users } = await supabase
         .from('profiles')
-        .select('id, email')
+        .select('id, email, avatar_url')
         .in('id', userIds)
+
+    // Get receipt URLs from transactions
+    const { data: transactions } = await supabase
+        .from('transactions')
+        .select('user_id, receipt_url, created_at, period_id')
+        .eq('category', 'Shared Expense')
+        .in('user_id', userIds)
 
     // If profiles don't exist, get from auth.users
     if (!users || users.length === 0) {
         const { data: authUsers } = await supabase.auth.admin.listUsers()
-        const userMap = new Map(authUsers.users.map(u => [u.id, u.email]))
-        return payments.map(p => ({
-            ...p,
-            user_email: userMap.get(p.user_id) || 'Unknown'
-        }))
+        const userMap = new Map(authUsers.users.map(u => [u.id, { email: u.email, avatar_url: null }]))
+
+        return payments.map(p => {
+            // Find matching transaction by user_id, period_id, and approximate time
+            const matchingTx = transactions?.find(tx =>
+                tx.user_id === p.user_id &&
+                tx.period_id === p.period_id &&
+                Math.abs(new Date(tx.created_at).getTime() - new Date(p.paid_at).getTime()) < 5000 // within 5 seconds
+            )
+
+            return {
+                ...p,
+                user_email: userMap.get(p.user_id)?.email || 'Unknown',
+                user_avatar: null,
+                receipt_url: matchingTx?.receipt_url || null
+            }
+        })
     }
 
-    const userMap = new Map(users.map(u => [u.id, u.email]))
-    return payments.map(p => ({
-        ...p,
-        user_email: userMap.get(p.user_id) || 'Unknown'
-    }))
+    const userMap = new Map(users.map(u => [u.id, { email: u.email, avatar_url: u.avatar_url }]))
+
+    return payments.map(p => {
+        // Find matching transaction by user_id, period_id, and approximate time
+        const matchingTx = transactions?.find(tx =>
+            tx.user_id === p.user_id &&
+            tx.period_id === p.period_id &&
+            Math.abs(new Date(tx.created_at).getTime() - new Date(p.paid_at).getTime()) < 5000 // within 5 seconds
+        )
+
+        return {
+            ...p,
+            user_email: userMap.get(p.user_id)?.email || 'Unknown',
+            user_avatar: userMap.get(p.user_id)?.avatar_url || null,
+            receipt_url: matchingTx?.receipt_url || null
+        }
+    })
 }
 
+export async function updateSharedItem(id: string, updates: Partial<SharedItem>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('shared_items')
+        .update(updates)
+        .eq('id', id)
+        .eq('created_by', user.id)
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as SharedItem
+}
+
+export async function deleteSharedItem(id: string) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    // Delete all payments first
+    await supabase
+        .from('shared_payments')
+        .delete()
+        .eq('item_id', id)
+
+    // Delete the item
+    const { error } = await supabase
+        .from('shared_items')
+        .delete()
+        .eq('id', id)
+        .eq('created_by', user.id)
+
+    if (error) throw error
+}

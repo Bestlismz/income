@@ -10,12 +10,15 @@ import { exportToExcel } from "@/lib/export"
 import { Transaction } from "@/types"
 import { FileDown, Loader2, ExternalLink, Pencil, Trash2, AlertCircle } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [addDialogOpen, setAddDialogOpen] = React.useState(false)
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null)
+  const [viewingImage, setViewingImage] = React.useState<string | null>(null)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
 
   const loadTransactions = React.useCallback(async () => {
@@ -189,17 +192,16 @@ export default function TransactionsPage() {
                       }`}>
                         {formatCurrency(transaction.amount)}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-2 text-center">
                         {transaction.receipt_url ? (
-                          <a
-                            href={transaction.receipt_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewingImage(transaction.receipt_url!)}
                           >
-                            <ExternalLink className="h-3 w-3" />
+                            <ExternalLink className="h-4 w-4 mr-1" />
                             View
-                          </a>
+                          </Button>
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
@@ -244,9 +246,16 @@ export default function TransactionsPage() {
           transaction={editingTransaction}
           open={!!editingTransaction}
           onOpenChange={(open) => !open && setEditingTransaction(null)}
-          onSuccess={loadTransactions}
+          onSave={handleUpdate}
         />
       )}
+
+      {/* Image Viewer */}
+      <ImageViewerDialog
+        imageUrl={viewingImage}
+        open={!!viewingImage}
+        onOpenChange={(open) => !open && setViewingImage(null)}
+      />
     </div>
   )
 }

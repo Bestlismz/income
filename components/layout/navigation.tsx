@@ -1,17 +1,35 @@
 "use client"
 
+import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Wallet, Receipt, Users, LogOut } from "lucide-react"
+import { Wallet, Receipt, Users, LogOut, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getProfile } from "@/lib/profile"
+import Image from "next/image"
 
 interface NavigationProps {
-  user: { email?: string }
+  user: {
+    email?: string
+  }
 }
 
 export function Navigation({ user }: NavigationProps) {
   const pathname = usePathname()
+  const [profile, setProfile] = React.useState<any>(null)
+
+  React.useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await getProfile()
+        setProfile(data)
+      } catch (error) {
+        console.error("Failed to load profile:", error)
+      }
+    }
+    loadProfile()
+  }, [])
 
   const links = [
     { href: "/transactions", label: "Transactions", icon: Receipt },
@@ -58,11 +76,26 @@ export function Navigation({ user }: NavigationProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">
               {user.email}
             </span>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+            <Link href="/profile">
+              <Button variant="ghost" size="icon" title="Profile" className="rounded-full p-0 h-9 w-9 overflow-hidden">
+                {profile?.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt="Profile"
+                    width={36}
+                    height={36}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
+              </Button>
+            </Link>
+            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

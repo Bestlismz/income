@@ -14,10 +14,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { getSharedItems, createSharedItem, addPaymentToSharedItem } from "@/lib/api"
-import { SharedItem } from "@/types"
-import { Plus, Loader2, Wallet, Users } from "lucide-react"
+import { getSharedItems, createSharedItem, addPaymentToSharedItem, updateSharedItem, deleteSharedItem } from "@/lib/api"
+import { exportToExcel } from "@/lib/export"
+import { SharedItem, PaymentScheduleItem } from "@/types"
+import { Plus, Loader2, Wallet, Users, Pencil, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { PaymentScheduleTable } from "@/components/shared/payment-schedule-table"
+import { EditSharedItemDialog } from "@/components/shared/edit-shared-item-dialog"
+import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
 
 export default function SharedPage() {
   const [items, setItems] = React.useState<(SharedItem & { total_paid: number })[]>([])
@@ -25,6 +29,11 @@ export default function SharedPage() {
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false)
   const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false)
   const [selectedItem, setSelectedItem] = React.useState<string | null>(null)
+  const [paymentSchedule, setPaymentSchedule] = React.useState<PaymentScheduleItem[]>([])
+  const [editingItem, setEditingItem] = React.useState<SharedItem | null>(null)
+  const [viewingImage, setViewingImage] = React.useState<string | null>(null)
+  const [receiptFile, setReceiptFile] = React.useState<File | null>(null)
+  const [itemPayments, setItemPayments] = React.useState<any[]>([])
 
   const loadItems = React.useCallback(async () => {
     try {
@@ -45,13 +54,32 @@ export default function SharedPage() {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     
+    // Calculate totals from schedule
+    const scheduleTotals = paymentSchedule.reduce(
+      (acc, item) => ({
+        principal: acc.principal + item.principal,
+        interest: acc.interest + item.interest,
+        total: acc.total + item.principal + item.interest
+      }),
+      { principal: 0, interest: 0, total: 0 }
+    )
+    
+    // Use schedule total if exists, otherwise use manual input
+    const totalAmount = paymentSchedule.length > 0 
+      ? scheduleTotals.total 
+      : Number(formData.get('total_amount'))
+    
     try {
       await createSharedItem({
         title: formData.get('title') as string,
-        total_amount: Number(formData.get('total_amount')),
+        total_amount: totalAmount,
+        principal_amount: scheduleTotals.principal > 0 ? scheduleTotals.principal : undefined,
+        interest_amount: scheduleTotals.interest > 0 ? scheduleTotals.interest : undefined,
+        payment_schedule: paymentSchedule.length > 0 ? paymentSchedule : undefined,
         due_date: (formData.get('due_date') as string) || undefined,
       })
       setCreateDialogOpen(false)
+      setPaymentSchedule([])
       loadItems()
     } catch (error: any) {
       alert(`Failed to create: ${error.message}`)
@@ -66,18 +94,49 @@ export default function SharedPage() {
     const item = items.find(i => i.id === selectedItem)
     if (!item) return
     
+    const periodValue = formData.get('period') as string
+    const periodId = periodValue ? Number(periodValue) : undefined
+    
     try {
       await addPaymentToSharedItem(
         selectedItem,
         Number(formData.get('amount')),
         item.title,
-        formData.get('description') as string || undefined
+        formData.get('description') as string || undefined,
+        periodId,
+        receiptFile || undefined
       )
       setPaymentDialogOpen(false)
       setSelectedItem(null)
+      setReceiptFile(null)
       loadItems()
     } catch (error: any) {
       alert(`Failed to add payment: ${error.message}`)
+    }
+  }
+
+  const handleUpdate = async (updates: Partial<SharedItem>) => {
+    if (!editingItem) return
+    
+    try {
+      await updateSharedItem(editingItem.id, updates)
+      setEditingItem(null)
+      loadItems()
+    } catch (error: any) {
+      alert(`Failed to update: ${error.message}`)
+    }
+  }
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"? This will also delete all associated payments.`)) {
+      return
+    }
+
+    try {
+      await deleteSharedItem(id)
+      loadItems()
+    } catch (error: any) {
+      alert(`Failed to delete: ${error.message}`)
     }
   }
 
@@ -98,7 +157,7 @@ export default function SharedPage() {
               New Shared Item
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <form onSubmit={handleCreateItem}>
               <DialogHeader>
                 <DialogTitle>Create Shared Item</DialogTitle>
@@ -116,16 +175,58 @@ export default function SharedPage() {
                     required
                   />
                 </div>
+                
+                {paymentSchedule.length === 0 ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="total_amount">Total Amount (฿)</Label>
+                    <Input
+                      id="total_amount"
+                      name="total_amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Total Amount (Auto-calculated)</Label>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(
+                        paymentSchedule.reduce((sum, item) => sum + item.principal + item.interest, 0)
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Calculated from payment schedule
+                    </p>
+                  </div>
+                )}
+                
+                <PaymentScheduleTable 
+                  schedule={paymentSchedule}
+                  onChange={setPaymentSchedule}
+                />
+
                 <div className="space-y-2">
-                  <Label htmlFor="total_amount">Total Amount (฿)</Label>
+                  <Label htmlFor="description">Description (Optional)</Label>
                   <Input
-                    id="total_amount"
-                    name="total_amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
+                    id="description"
+                    name="description"
+                    placeholder="e.g., Monthly payment"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receipt">Receipt (Optional)</Label>
+                  <Input
+                    id="receipt"
+                    name="receipt"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Upload payment slip or receipt
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="due_date">Due Date (Optional)</Label>
@@ -176,10 +277,30 @@ export default function SharedPage() {
                 onClick={() => window.location.href = `/shared/${item.id}`}
               >
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5" />
-                    {item.title}
-                  </CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5" />
+                      {item.title}
+                    </CardTitle>
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingItem(item)}
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(item.id, item.title)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
                   {item.due_date && (
                     <CardDescription>
                       Due: {new Date(item.due_date).toLocaleDateString('th-TH')}
@@ -252,20 +373,117 @@ export default function SharedPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              {(() => {
+                const item = items.find(i => i.id === selectedItem)
+                const hasSchedule = item?.payment_schedule && item.payment_schedule.length > 0
+                
+                // Load payments for this item when dialog opens
+                React.useEffect(() => {
+                  if (selectedItem && paymentDialogOpen) {
+                    import('@/lib/api').then(({ getSharedItemDetails }) => {
+                      getSharedItemDetails(selectedItem).then(setItemPayments).catch(console.error)
+                    })
+                  }
+                }, [selectedItem, paymentDialogOpen])
+                
+                return hasSchedule ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="period">Select Period</Label>
+                      <select
+                        id="period"
+                        name="period"
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        required
+                        onChange={(e) => {
+                          const periodNum = Number(e.target.value)
+                          const period = item.payment_schedule?.find(p => p.month === periodNum)
+                          if (period) {
+                            const amountInput = document.getElementById('amount') as HTMLInputElement
+                            if (amountInput) {
+                              amountInput.value = (period.principal + period.interest).toString()
+                            }
+                          }
+                        }}
+                      >
+                        <option value="">Choose a period...</option>
+                        {item.payment_schedule
+                          ?.filter((period) => {
+                            // Only show periods that haven't been fully paid
+                            const periodPayments = itemPayments.filter(p => p.period_id === period.month)
+                            const totalPaid = periodPayments.reduce((sum, p) => sum + p.amount, 0)
+                            const periodTotal = period.principal + period.interest
+                            return totalPaid < periodTotal
+                          })
+                          .map((period) => (
+                            <option key={period.month} value={period.month}>
+                              Period {period.month} - {new Date(period.due_date).toLocaleDateString('th-TH')} 
+                              ({formatCurrency(period.principal + period.interest)})
+                            </option>
+                          ))}
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        Only unpaid periods are shown
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="amount">Amount (฿)</Label>
+                      <Input
+                        id="amount"
+                        name="amount"
+                        type="number"
+                        step="0.01"
+                        placeholder="Select a period first"
+                        required
+                        readOnly
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Amount is set based on selected period
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Amount (฿)</Label>
+                    <Input
+                      id="amount"
+                      name="amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                )
+              })()}
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount (฿)</Label>
+                <Label htmlFor="payment-description">Description (Optional)</Label>
                 <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  required
+                  id="payment-description"
+                  name="description"
+                  placeholder="e.g., Monthly payment"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment-receipt">Receipt (Optional)</Label>
+                <Input
+                  id="payment-receipt"
+                  name="receipt"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Upload payment slip or receipt
+                </p>
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                setPaymentDialogOpen(false)
+                setSelectedItem(null)
+                setReceiptFile(null)
+              }}>
                 Cancel
               </Button>
               <Button type="submit">Add Payment</Button>
@@ -273,6 +491,23 @@ export default function SharedPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Dialog */}
+      {editingItem && (
+        <EditSharedItemDialog
+          item={editingItem}
+          open={!!editingItem}
+          onOpenChange={(open) => !open && setEditingItem(null)}
+          onSave={handleUpdate}
+        />
+      )}
+
+      {/* Image Viewer */}
+      <ImageViewerDialog
+        imageUrl={viewingImage}
+        open={!!viewingImage}
+        onOpenChange={(open) => !open && setViewingImage(null)}
+      />
     </div>
   )
 }
