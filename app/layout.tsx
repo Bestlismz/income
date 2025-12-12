@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Zenith Ledger - Personal Finance Manager",
-  description: "Track your income, expenses, and shared payments",
+  title: "MoneyFlow - Smart Finance Tracker",
+  description: "Track your income, expenses, and shared finances effortlessly",
 };
 
 export default function RootLayout({

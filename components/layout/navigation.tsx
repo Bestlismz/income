@@ -8,6 +8,7 @@ import { Wallet, Receipt, Users, LogOut, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getProfile } from "@/lib/profile"
 import Image from "next/image"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface NavigationProps {
   user: {
@@ -42,61 +43,73 @@ export function Navigation({ user }: NavigationProps) {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-6">
+    <nav className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 backdrop-blur-lg sticky top-0 z-50 transition-colors duration-300">
+      <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/transactions" className="flex items-center gap-2 font-bold text-xl">
-              <Wallet className="h-6 w-6 text-primary" />
-              <span className="bg-gradient-to-r from-primary to-cyan-500 bg-clip-text text-transparent">
-                Zenith Ledger
-              </span>
-            </Link>
-            
-            <div className="hidden md:flex items-center gap-2">
-              {links.map((link) => {
-                const Icon = link.icon
-                const isActive = pathname === link.href
-                
-                return (
-                  <Link key={link.href} href={link.href}>
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      className={cn(
-                        "gap-2",
-                        isActive && "bg-primary/10 text-primary hover:bg-primary/20"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {link.label}
-                    </Button>
-                  </Link>
-                )
-              })}
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center transition-transform group-hover:scale-110 duration-200">
+              <Wallet className="h-5 w-5 text-white" />
             </div>
+            <span className="text-xl font-bold text-slate-900 dark:text-white">
+              MoneyFlow
+            </span>
+          </Link>
+            
+          {/* Nav Links */}
+          <div className="hidden md:flex items-center gap-1">
+            {links.map((link) => {
+              const Icon = link.icon
+              const isActive = pathname === link.href
+              
+              return (
+                <Link key={link.href} href={link.href}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "gap-2 transition-all duration-200",
+                      isActive 
+                        ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium" 
+                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.label}
+                  </Button>
+                </Link>
+              )
+            })}
           </div>
 
+          {/* User Section */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              {user.email}
-            </span>
+            <ThemeToggle />
             <Link href="/profile">
-              <Button variant="ghost" size="icon" title="Profile" className="rounded-full p-0 h-9 w-9 overflow-hidden">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-200"
+              >
                 {profile?.avatar_url ? (
                   <Image
                     src={profile.avatar_url}
                     alt="Profile"
-                    width={36}
-                    height={36}
-                    className="object-cover w-full h-full"
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
                   />
                 ) : (
-                  <User className="h-4 w-4" />
+                  <User className="h-5 w-5" />
                 )}
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
-              <LogOut className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleSignOut}
+              className="hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-200"
+            >
+              <LogOut className="h-5 w-5" />
             </Button>
           </div>
         </div>
