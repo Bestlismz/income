@@ -1,14 +1,8 @@
 import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import html2canvas from 'html2canvas'
 import { Transaction } from '@/types'
 
-export function exportToPDF(transactions: Transaction[]) {
-    const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-    })
-
+export async function exportToPDF(transactions: Transaction[]) {
     // Calculate summary
     const income = transactions
         .filter(t => t.type === 'income')
@@ -18,117 +12,113 @@ export function exportToPDF(transactions: Transaction[]) {
         .reduce((sum, t) => sum + Math.abs(t.amount), 0)
     const balance = income - expenses
 
-    // Title
-    doc.setFontSize(18)
-    doc.setFont('helvetica', 'bold')
-    doc.text('TRANSACTIONS REPORT', 105, 15, { align: 'center' })
+    // Create a temporary container for HTML content
+    const container = document.createElement('div')
+    container.style.position = 'absolute'
+    container.style.left = '-9999px'
+    container.style.width = '800px'
+    container.style.padding = '20px'
+    container.style.backgroundColor = 'white'
+    container.style.fontFamily = 'Arial, sans-serif'
 
-    // Date
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
     const today = new Date()
-    const dateStr = `Date: ${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`
-    doc.text(dateStr, 105, 22, { align: 'center' })
+    const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`
 
-    // Summary Section
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Summary', 14, 32)
-
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Total Income:`, 14, 40)
-    doc.setTextColor(34, 197, 94) // green
-    doc.text(`${income.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB`, 60, 40)
-
-    doc.setTextColor(0, 0, 0)
-    doc.text(`Total Expenses:`, 14, 47)
-    doc.setTextColor(239, 68, 68) // red
-    doc.text(`${expenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB`, 60, 47)
-
-    doc.setTextColor(0, 0, 0)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`Balance:`, 14, 54)
-    doc.setTextColor(balance >= 0 ? 34 : 239, balance >= 0 ? 197 : 68, balance >= 0 ? 94 : 68)
-    doc.text(`${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB`, 60, 54)
-
-    doc.setTextColor(0, 0, 0)
-    doc.setFont('helvetica', 'normal')
-
-    // Transactions Table
-    const tableData = transactions.map(t => {
+    container.innerHTML = `
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h1 style="font-size: 24px; margin: 0 0 5px 0;">TRANSACTIONS REPORT</h1>
+      <p style="margin: 0; font-size: 12px;">Date: ${dateStr}</p>
+    </div>
+    
+    <div style="margin-bottom: 20px; padding: 15px; background: #f5f7fa; border-radius: 8px;">
+      <h2 style="font-size: 16px; margin: 0 0 10px 0;">Summary</h2>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+        <span>Total Income:</span>
+        <span style="color: #22c55e; font-weight: bold;">${income.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+        <span>Total Expenses:</span>
+        <span style="color: #ef4444; font-weight: bold;">${expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding-top: 5px; border-top: 1px solid #ddd;">
+        <span style="font-weight: bold;">Balance:</span>
+        <span style="color: ${balance >= 0 ? '#22c55e' : '#ef4444'}; font-weight: bold;">${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</span>
+      </div>
+    </div>
+    
+    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+      <thead>
+        <tr style="background: #3b82f6; color: white;">
+          <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Date</th>
+          <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Description</th>
+          <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Category</th>
+          <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Type</th>
+          <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${transactions.map((t, index) => {
         const date = new Date(t.date)
         const dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+        const isIncome = t.type === 'income'
+        const bgColor = index % 2 === 0 ? '#f5f7fa' : 'white'
 
-        // For Thai text, we'll use a placeholder or transliteration
-        // This is a workaround since jsPDF doesn't support Thai fonts well
-        const description = t.description || '-'
-        const category = t.category || '-'
+        return `
+            <tr style="background: ${bgColor};">
+              <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${dateStr}</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${t.description}</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${t.category}</td>
+              <td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: ${isIncome ? '#22c55e' : '#ef4444'};">${isIncome ? 'Income' : 'Expense'}</td>
+              <td style="padding: 8px; text-align: right; border: 1px solid #ddd; color: ${isIncome ? '#22c55e' : '#ef4444'}; font-weight: bold;">${t.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</td>
+            </tr>
+          `
+    }).join('')}
+      </tbody>
+    </table>
+  `
 
-        return [
-            dateStr,
-            description,
-            category,
-            t.type === 'income' ? 'Income' : 'Expense',
-            `${t.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB`
-        ]
-    })
+    document.body.appendChild(container)
 
-    autoTable(doc, {
-        startY: 62,
-        head: [['Date', 'Description', 'Category', 'Type', 'Amount']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: {
-            fillColor: [59, 130, 246], // blue
-            textColor: 255,
-            fontStyle: 'bold',
-            halign: 'center',
-            fontSize: 10
-        },
-        styles: {
-            fontSize: 9,
-            cellPadding: 3,
-            font: 'helvetica',
-            // Add overflow handling for Thai text
-            overflow: 'linebreak',
-            cellWidth: 'wrap'
-        },
-        columnStyles: {
-            0: { halign: 'center', cellWidth: 30 },
-            1: { halign: 'left', cellWidth: 60 },
-            2: { halign: 'left', cellWidth: 35 },
-            3: { halign: 'center', cellWidth: 25 },
-            4: { halign: 'right', cellWidth: 35 }
-        },
-        alternateRowStyles: {
-            fillColor: [245, 247, 250]
-        },
-        didParseCell: function (data) {
-            // Color code the type column
-            if (data.column.index === 3 && data.section === 'body') {
-                const type = transactions[data.row.index].type
-                if (type === 'income') {
-                    data.cell.styles.textColor = [34, 197, 94] // green
-                } else {
-                    data.cell.styles.textColor = [239, 68, 68] // red
-                }
-            }
-            // Color code the amount column
-            if (data.column.index === 4 && data.section === 'body') {
-                const type = transactions[data.row.index].type
-                if (type === 'income') {
-                    data.cell.styles.textColor = [34, 197, 94] // green
-                    data.cell.styles.fontStyle = 'bold'
-                } else {
-                    data.cell.styles.textColor = [239, 68, 68] // red
-                    data.cell.styles.fontStyle = 'bold'
-                }
-            }
+    try {
+        // Convert HTML to canvas
+        const canvas = await html2canvas(container, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        })
+
+        // Create PDF
+        const imgData = canvas.toDataURL('image/png')
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        })
+
+        const imgWidth = 210 // A4 width in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+        let heightLeft = imgHeight
+        let position = 0
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= 297 // A4 height in mm
+
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight
+            pdf.addPage()
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+            heightLeft -= 297
         }
-    })
 
-    // Save PDF
-    const filename = `transactions_${new Date().toISOString().split('T')[0]}.pdf`
-    doc.save(filename)
+        // Save PDF
+        const filename = `transactions_${new Date().toISOString().split('T')[0]}.pdf`
+        pdf.save(filename)
+    } finally {
+        // Clean up
+        document.body.removeChild(container)
+    }
 }
