@@ -33,9 +33,9 @@ export function ThemeToggle() {
       title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
     >
       {theme === "light" ? (
-        <Moon className="h-5 w-5 text-slate-700 transition-transform duration-500 rotate-0 hover:rotate-12" />
-      ) : (
         <Sun className="h-5 w-5 text-yellow-500 transition-transform duration-500 rotate-0 hover:rotate-12" />
+      ) : (
+        <Moon className="h-5 w-5 text-slate-300 transition-transform duration-500 rotate-0 hover:rotate-12" />
       )}
     </Button>
   )

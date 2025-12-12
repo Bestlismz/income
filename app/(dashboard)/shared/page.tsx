@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -266,16 +267,22 @@ export default function SharedPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const remaining = item.total_amount - item.total_paid
             const progress = (item.total_paid / item.total_amount) * 100
 
             return (
-              <Card 
-                key={item.id} 
-                className="hover:shadow-lg transition-all cursor-pointer"
-                onClick={() => window.location.href = `/shared/${item.id}`}
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                whileHover={{ scale: 1.03, y: -8 }}
               >
+                <Card 
+                  className="h-full hover:shadow-xl transition-shadow cursor-pointer border-2 hover:border-primary/20"
+                  onClick={() => window.location.href = `/shared/${item.id}`}
+                >
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <CardTitle className="flex items-center gap-2">
@@ -357,6 +364,7 @@ export default function SharedPage() {
                   </Button>
                 </CardContent>
               </Card>
+              </motion.div>
             )
           })}
         </div>

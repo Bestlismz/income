@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -114,6 +115,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
     )
   }
 
+  // Simple calculations - overpay is separate and doesn't affect these
   const remaining = item.total_amount - item.total_paid
   const progress = (item.total_paid / item.total_amount) * 100
 
@@ -175,74 +177,148 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
-          <CardHeader className="pb-2">
-            <CardDescription>Total Amount</CardDescription>
-            <CardTitle className="text-2xl text-blue-500">
-              {formatCurrency(item.total_amount)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
-          <CardHeader className="pb-2">
-            <CardDescription>Total Paid</CardDescription>
-            <CardTitle className="text-2xl text-green-500">
-              {formatCurrency(item.total_paid)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className={`bg-gradient-to-br ${remaining > 0 ? 'from-orange-500/10 to-red-500/10 border-orange-500/20' : 'from-green-500/10 to-emerald-500/10 border-green-500/20'}`}>
-          <CardHeader className="pb-2">
-            <CardDescription>Remaining</CardDescription>
-            <CardTitle className={`text-2xl ${remaining > 0 ? 'text-orange-500' : 'text-green-500'}`}>
-              {formatCurrency(remaining)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          whileHover={{ scale: 1.05, y: -4 }}
+        >
+          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20 hover:shadow-lg hover:shadow-blue-500/20 transition-shadow">
+            <CardHeader className="pb-2">
+              <CardDescription>Total Amount</CardDescription>
+              <CardTitle className="text-2xl text-blue-500">
+                {formatCurrency(item.total_amount)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          whileHover={{ scale: 1.05, y: -4 }}
+        >
+          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 hover:shadow-lg hover:shadow-green-500/20 transition-shadow">
+            <CardHeader className="pb-2">
+              <CardDescription>Total Paid</CardDescription>
+              <CardTitle className="text-2xl text-green-500">
+                {formatCurrency(item.total_paid)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          whileHover={{ scale: 1.05, y: -4 }}
+        >
+          <Card className={`bg-gradient-to-br ${remaining > 0 ? 'from-orange-500/10 to-red-500/10 border-orange-500/20 hover:shadow-orange-500/20' : 'from-green-500/10 to-emerald-500/10 border-green-500/20 hover:shadow-green-500/20'} hover:shadow-lg transition-shadow`}>
+            <CardHeader className="pb-2">
+              <CardDescription>Remaining</CardDescription>
+              <CardTitle className={`text-2xl ${remaining > 0 ? 'text-orange-500' : 'text-green-500'}`}>
+                {formatCurrency(remaining)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </motion.div>
+        
+        {/* Overpayment Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          whileHover={{ scale: 1.05, y: -4 }}
+        >
+          <Card className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/20 transition-shadow">
+            <CardHeader className="pb-2">
+              <CardDescription>Overpay</CardDescription>
+              <CardTitle className="text-2xl text-orange-500">
+                {(() => {
+                  // Sum all overpayments from each period (no deductions)
+                  let totalOverpay = 0
+                  if (item.payment_schedule && item.payment_schedule.length > 0) {
+                    item.payment_schedule.forEach(period => {
+                      const periodPayments = payments.filter(p => p.period_id === period.month)
+                      const totalPaid = periodPayments.reduce((sum, p) => sum + p.amount, 0)
+                      const periodTotal = period.principal + period.interest
+                      const overpayment = Math.max(0, totalPaid - periodTotal)
+                      totalOverpay += overpayment
+                    })
+                  }
+                  return formatCurrency(totalOverpay)
+                })()}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </motion.div>
+
         {item.principal_amount && item.interest_amount && (
           <>
-            <Card className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
-              <CardHeader className="pb-2">
-                <CardDescription>Principal Left</CardDescription>
-                <CardTitle className="text-2xl text-indigo-500">
-                  {(() => {
-                    const breakdown = calculateTotals(payments, item.principal_amount!, item.interest_amount!)
-                    return formatCurrency(item.principal_amount - breakdown.totalPrincipalPaid)
-                  })()}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border-amber-500/20">
-              <CardHeader className="pb-2">
-                <CardDescription>Interest Left</CardDescription>
-                <CardTitle className="text-2xl text-amber-500">
-                  {(() => {
-                    const breakdown = calculateTotals(payments, item.principal_amount!, item.interest_amount!)
-                    return formatCurrency(item.interest_amount - breakdown.totalInterestPaid)
-                  })()}
-                </CardTitle>
-              </CardHeader>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              whileHover={{ scale: 1.05, y: -4 }}
+            >
+              <Card className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/20 transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardDescription>Principal Left</CardDescription>
+                  <CardTitle className="text-2xl text-indigo-500">
+                    {(() => {
+                      const breakdown = calculateTotals(payments, item.principal_amount!, item.interest_amount!)
+                      return formatCurrency(item.principal_amount - breakdown.totalPrincipalPaid)
+                    })()}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
+              whileHover={{ scale: 1.05, y: -4 }}
+            >
+              <Card className="bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border-amber-500/20 hover:shadow-lg hover:shadow-amber-500/20 transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardDescription>Interest Left</CardDescription>
+                  <CardTitle className="text-2xl text-amber-500">
+                    {(() => {
+                      const breakdown = calculateTotals(payments, item.principal_amount!, item.interest_amount!)
+                      return formatCurrency(item.interest_amount - breakdown.totalInterestPaid)
+                    })()}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </motion.div>
           </>
         )}
       </div>
 
       {/* Progress */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Progress</CardTitle>
-          <CardDescription>{progress.toFixed(1)}% completed</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-4 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all"
-              style={{ width: `${Math.min(progress, 100)}%` }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.7 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Progress</CardTitle>
+            <CardDescription>{progress.toFixed(1)}% completed</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-4 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(progress, 100)}%` }}
+                transition={{ duration: 1, delay: 0.9, ease: "easeOut" }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Payment Schedule Table */}
       {item.payment_schedule && item.payment_schedule.length > 0 && (
@@ -273,6 +349,8 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                     <th className="px-4 py-3 text-right font-semibold">Principal</th>
                     <th className="px-4 py-3 text-right font-semibold">Interest</th>
                     <th className="px-4 py-3 text-right font-semibold">Total</th>
+                    <th className="px-4 py-3 text-right font-semibold">Paid</th>
+                    <th className="px-4 py-3 text-right font-semibold text-orange-600 dark:text-orange-400">Overpay</th>
                     <th className="px-4 py-3 text-center font-semibold">Status</th>
                     <th className="px-4 py-3"></th>
                   </tr>
@@ -282,10 +360,18 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                     const periodPayments = payments.filter(p => p.period_id === period.month)
                     const totalPaid = periodPayments.reduce((sum, p) => sum + p.amount, 0)
                     const periodTotal = period.principal + period.interest
+                    const overpayment = Math.max(0, totalPaid - periodTotal)
                     const isComplete = totalPaid >= periodTotal
 
                     return (
-                      <tr key={period.month} className="border-t hover:bg-muted/20">
+                      <motion.tr 
+                        key={period.month} 
+                        className="border-t hover:bg-muted/20"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: period.month * 0.05 }}
+                        whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.02)" }}
+                      >
                         <td className="px-4 py-3 font-medium">{period.month}</td>
                         <td className="px-4 py-3">
                           {new Date(period.due_date).toLocaleDateString('th-TH')}
@@ -299,9 +385,21 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                         <td className="px-4 py-3 text-right font-semibold">
                           {formatCurrency(periodTotal)}
                         </td>
+                        <td className="px-4 py-3 text-right font-medium text-blue-600 dark:text-blue-400">
+                          {formatCurrency(totalPaid)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {overpayment > 0 ? (
+                            <span className="font-semibold text-orange-600 dark:text-orange-400">
+                              +{formatCurrency(overpayment)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-center">
                           {isComplete ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold">
                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
@@ -309,7 +407,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                             </span>
                           ) : (
                             <span className="text-xs text-muted-foreground">
-                              Paid: {formatCurrency(totalPaid)}
+                              Remaining: {formatCurrency(periodTotal - totalPaid)}
                             </span>
                           )}
                         </td>
@@ -326,7 +424,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                             </Button>
                           )}
                         </td>
-                      </tr>
+                      </motion.tr>
                     )
                   })}
                 </tbody>
@@ -351,10 +449,14 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
             </div>
           ) : (
             <div className="space-y-4">
-              {payments.map((payment) => (
-                <div
+              {payments.map((payment, index) => (
+                <motion.div
                   key={payment.id}
                   className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ scale: 1.02, x: 4 }}
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
@@ -399,7 +501,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                       {formatCurrency(payment.amount)}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
@@ -426,7 +528,6 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                   type="number"
                   step="0.01"
                   placeholder="0.00"
-                  max={remaining}
                   required
                 />
                 <p className="text-xs text-muted-foreground">
