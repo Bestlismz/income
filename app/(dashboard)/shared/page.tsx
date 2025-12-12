@@ -23,6 +23,7 @@ import { formatCurrency } from "@/lib/utils"
 import { PaymentScheduleTable } from "@/components/shared/payment-schedule-table"
 import { EditSharedItemDialog } from "@/components/shared/edit-shared-item-dialog"
 import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
+import { Pagination } from "@/components/ui/pagination"
 
 export default function SharedPage() {
   const [items, setItems] = React.useState<(SharedItem & { total_paid: number })[]>([])
@@ -35,6 +36,8 @@ export default function SharedPage() {
   const [viewingImage, setViewingImage] = React.useState<string | null>(null)
   const [receiptFile, setReceiptFile] = React.useState<File | null>(null)
   const [itemPayments, setItemPayments] = React.useState<any[]>([])
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 9 // 3x3 grid
 
   const loadItems = React.useCallback(async () => {
     try {
@@ -140,6 +143,14 @@ export default function SharedPage() {
       alert(`Failed to delete: ${error.message}`)
     }
   }
+
+  // Calculate pagination
+  const totalPages = Math.ceil(items.length / itemsPerPage)
+  const paginatedItems = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return items.slice(startIndex, endIndex)
+  }, [items, currentPage, itemsPerPage])
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -266,8 +277,9 @@ export default function SharedPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {items.map((item, index) => {
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {paginatedItems.map((item, index) => {
             const remaining = item.total_amount - item.total_paid
             const progress = (item.total_paid / item.total_amount) * 100
 
@@ -368,6 +380,18 @@ export default function SharedPage() {
             )
           })}
         </div>
+
+        {/* Pagination */}
+        {items.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={items.length}
+          />
+        )}
+        </>
       )}
 
       {/* Add Payment Dialog */}

@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { getSharedItems, getSharedItemDetails, addPaymentToSharedItem } from "@/lib/api"
-import { exportSharedItemToExcel } from "@/lib/export-shared"
+import { exportSharedItemToPDF } from "@/lib/export-shared"
 import { SharedItem, PaymentScheduleItem } from "@/types"
 import { ArrowLeft, Plus, FileDown, User, Pencil, Loader2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
@@ -25,6 +25,7 @@ import Image from "next/image"
 import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
 import { EditScheduleDialog } from "@/components/shared/edit-schedule-dialog"
 import { updateSharedItem } from "@/lib/api"
+import { Pagination } from "@/components/ui/pagination"
 
 export default function SharedItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
@@ -36,6 +37,10 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
   const [selectedItem, setSelectedItem] = React.useState<number | null>(null) // Period number
   const [viewingImage, setViewingImage] = React.useState<string | null>(null)
   const [editScheduleOpen, setEditScheduleOpen] = React.useState(false)
+  const [schedulePage, setSchedulePage] = React.useState(1)
+  const [historyPage, setHistoryPage] = React.useState(1)
+  const schedulePerPage = 10
+  const historyPerPage = 5
 
   const loadData = React.useCallback(async () => {
     try {
@@ -88,9 +93,28 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
 
   const handleExport = () => {
     if (item) {
-      exportSharedItemToExcel(item, payments)
+      exportSharedItemToPDF(item, payments)
     }
   }
+
+  // Calculate pagination for payment schedule (must be before early returns)
+  const scheduleTotalPages = item?.payment_schedule 
+    ? Math.ceil(item.payment_schedule.length / schedulePerPage)
+    : 0
+  const paginatedSchedule = React.useMemo(() => {
+    if (!item?.payment_schedule) return []
+    const startIndex = (schedulePage - 1) * schedulePerPage
+    const endIndex = startIndex + schedulePerPage
+    return item.payment_schedule.slice(startIndex, endIndex)
+  }, [item?.payment_schedule, schedulePage, schedulePerPage])
+
+  // Calculate pagination for payment history (must be before early returns)
+  const historyTotalPages = Math.ceil(payments.length / historyPerPage)
+  const paginatedPayments = React.useMemo(() => {
+    const startIndex = (historyPage - 1) * historyPerPage
+    const endIndex = startIndex + historyPerPage
+    return payments.slice(startIndex, endIndex)
+  }, [payments, historyPage, historyPerPage])
 
   if (isLoading) {
     return (
@@ -356,7 +380,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                   </tr>
                 </thead>
                 <tbody>
-                  {item.payment_schedule.map((period) => {
+                  {paginatedSchedule.map((period) => {
                     const periodPayments = payments.filter(p => p.period_id === period.month)
                     const totalPaid = periodPayments.reduce((sum, p) => sum + p.amount, 0)
                     const periodTotal = period.principal + period.interest
@@ -430,6 +454,17 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination */}
+            {item.payment_schedule && item.payment_schedule.length > 0 && (
+              <Pagination
+                currentPage={schedulePage}
+                totalPages={scheduleTotalPages}
+                onPageChange={setSchedulePage}
+                itemsPerPage={schedulePerPage}
+                totalItems={item.payment_schedule.length}
+              />
+            )}
           </CardContent>
         </Card>
       )}
@@ -448,62 +483,75 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
               No payments yet
             </div>
           ) : (
-            <div className="space-y-4">
-              {payments.map((payment, index) => (
-                <motion.div
-                  key={payment.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  whileHover={{ scale: 1.02, x: 4 }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                      {payment.user_avatar ? (
-                        <Image
-                          src={payment.user_avatar}
-                          alt={payment.user_email || 'User'}
-                          width={40}
-                          height={40}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <User className="h-5 w-5 text-muted-foreground" />
-                      )}
+            <>
+              <div className="space-y-4">
+                {paginatedPayments.map((payment, index) => (
+                  <motion.div
+                    key={payment.id}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                        {payment.user_avatar ? (
+                          <Image
+                            src={payment.user_avatar}
+                            alt={payment.user_email || 'User'}
+                            width={40}
+                            height={40}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <User className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{payment.user_email || 'Unknown User'}</p>
+                        {payment.description && (
+                          <p className="text-xs text-muted-foreground italic">{payment.description}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(payment.paid_at).toLocaleDateString('th-TH', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                        {payment.receipt_url && (
+                          <button
+                            onClick={() => setViewingImage(payment.receipt_url)}
+                            className="text-xs text-blue-500 hover:underline mt-1"
+                          >
+                            📎 View Receipt
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{payment.user_email || 'Unknown User'}</p>
-                      {payment.description && (
-                        <p className="text-xs text-muted-foreground italic">{payment.description}</p>
-                      )}
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(payment.paid_at).toLocaleDateString('th-TH', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-green-500">
+                        {formatCurrency(payment.amount)}
                       </p>
-                      {payment.receipt_url && (
-                        <button
-                          onClick={() => setViewingImage(payment.receipt_url)}
-                          className="text-xs text-blue-500 hover:underline mt-1"
-                        >
-                          📎 View Receipt
-                        </button>
-                      )}
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-green-500">
-                      {formatCurrency(payment.amount)}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {payments.length > 0 && (
+                <Pagination
+                  currentPage={historyPage}
+                  totalPages={historyTotalPages}
+                  onPageChange={setHistoryPage}
+                  itemsPerPage={historyPerPage}
+                  totalItems={payments.length}
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>

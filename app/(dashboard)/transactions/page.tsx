@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button"
 import { AddTransactionDialog } from "@/components/transactions/add-transaction-dialog"
 import { EditTransactionDialog } from "@/components/transactions/edit-transaction-dialog"
 import { getTransactions, deleteTransaction } from "@/lib/api"
-import { exportToExcel } from "@/lib/export"
+import { exportToPDF } from "@/lib/export"
 import { Transaction } from "@/types"
-import { FileDown, Loader2, ExternalLink, Pencil, Trash2, AlertCircle } from "lucide-react"
+import { FileDown, Loader2, ExternalLink, Pencil, Trash2, AlertCircle, Filter } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
+import { Label } from "@/components/ui/label"
+import { Pagination } from "@/components/ui/pagination"
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
@@ -21,6 +23,9 @@ export default function TransactionsPage() {
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null)
   const [viewingImage, setViewingImage] = React.useState<string | null>(null)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [selectedMonth, setSelectedMonth] = React.useState<string>("all")
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 10
 
   const loadTransactions = React.useCallback(async () => {
     try {
@@ -54,19 +59,54 @@ export default function TransactionsPage() {
   }
 
   const handleExport = () => {
-    exportToExcel(transactions)
+    exportToPDF(filteredTransactions)
   }
 
-  // Calculate summary
+  // Get available months from transactions
+  const availableMonths = React.useMemo(() => {
+    const months = new Set<string>()
+    transactions.forEach(t => {
+      const date = new Date(t.date)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      months.add(monthKey)
+    })
+    return Array.from(months).sort().reverse()
+  }, [transactions])
+
+  // Filter transactions by selected month
+  const filteredTransactions = React.useMemo(() => {
+    if (selectedMonth === "all") return transactions
+    
+    return transactions.filter(t => {
+      const date = new Date(t.date)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      return monthKey === selectedMonth
+    })
+  }, [transactions, selectedMonth])
+
+  // Calculate summary from filtered transactions
   const summary = React.useMemo(() => {
-    const income = transactions
+    const income = filteredTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0)
-    const expenses = transactions
+    const expenses = filteredTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Math.abs(t.amount), 0)
     return { income, expenses, balance: income - expenses }
-  }, [transactions])
+  }, [filteredTransactions])
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage)
+  const paginatedTransactions = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredTransactions.slice(startIndex, endIndex)
+  }, [filteredTransactions, currentPage, itemsPerPage])
+
+  // Reset to page 1 when filter changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedMonth])
 
   if (error && error.includes('relation "transactions" does not exist')) {
     return (
@@ -109,7 +149,7 @@ export default function TransactionsPage() {
           <Button
             variant="outline"
             onClick={handleExport}
-            disabled={transactions.length === 0}
+            disabled={filteredTransactions.length === 0}
           >
             <FileDown className="h-4 w-4" />
             Export
@@ -117,6 +157,54 @@ export default function TransactionsPage() {
           <AddTransactionDialog onSuccess={loadTransactions} />
         </div>
       </div>
+
+      {/* Month Filter */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Filter className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <Label htmlFor="month-filter" className="text-sm font-medium mb-2 block">
+                  Filter by Month
+                </Label>
+                <select
+                  id="month-filter"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="flex h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="all">All Time</option>
+                  {availableMonths.map(month => {
+                    const [year, monthNum] = month.split('-')
+                    const date = new Date(parseInt(year), parseInt(monthNum) - 1)
+                    const monthName = date.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })
+                    return (
+                      <option key={month} value={month}>
+                        {monthName}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+              {selectedMonth !== "all" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedMonth("all")}
+                  className="text-xs"
+                >
+                  Clear Filter
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -195,7 +283,8 @@ export default function TransactionsPage() {
           <CardHeader>
             <CardTitle>Transaction History</CardTitle>
             <CardDescription>
-              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} recorded
+              {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} recorded
+              {selectedMonth !== "all" && " (filtered)"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -203,9 +292,11 @@ export default function TransactionsPage() {
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : transactions.length === 0 ? (
+            ) : filteredTransactions.length === 0 ? (
               <div className="text-center p-8 text-muted-foreground">
-                No transactions yet. Add your first transaction to get started!
+                {selectedMonth === "all" 
+                  ? "No transactions yet. Add your first transaction to get started!"
+                  : "No transactions found for this month."}
               </div>
             ) : (
               <div className="relative overflow-x-auto">
@@ -221,7 +312,7 @@ export default function TransactionsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((transaction, index) => (
+                    {paginatedTransactions.map((transaction, index) => (
                       <motion.tr 
                         key={transaction.id} 
                         className="border-b hover:bg-muted/30 transition-colors"
@@ -288,6 +379,17 @@ export default function TransactionsPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+
+            {/* Pagination */}
+            {filteredTransactions.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredTransactions.length}
+              />
             )}
           </CardContent>
         </Card>
