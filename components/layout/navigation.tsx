@@ -33,6 +33,7 @@ export function Navigation({ user }: NavigationProps) {
   }, [])
 
   const links = [
+    { href: "/dashboard", label: "Dashboard", icon: Wallet },
     { href: "/transactions", label: "Transactions", icon: Receipt },
     { href: "/shared", label: "Shared Expenses", icon: Users },
   ]
@@ -47,7 +48,7 @@ export function Navigation({ user }: NavigationProps) {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/dashboard" className="flex items-center gap-2 group">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center transition-transform group-hover:scale-110 duration-200">
               <Wallet className="h-5 w-5 text-white" />
             </div>
@@ -109,7 +110,7 @@ export function Navigation({ user }: NavigationProps) {
               onClick={handleSignOut}
               className="hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-200"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-5 w-5 text-slate-700 dark:text-slate-300" />
             </Button>
           </div>
         </div>
