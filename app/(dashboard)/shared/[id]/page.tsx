@@ -188,7 +188,6 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
             <p className="text-muted-foreground">Shared expense details</p>
           </div>
         </div>
-        </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
             <FileDown className="h-4 w-4 mr-2" />
@@ -201,7 +200,6 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      {/* Summary Cards */}
       {/* Summary Cards */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <motion.div

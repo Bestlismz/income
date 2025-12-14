@@ -213,6 +213,8 @@ export default function ProfilePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <Button 
+            variant="destructive" 
             className="w-full h-12 text-base sm:h-10 sm:text-sm"
             onClick={async () => {
               if (confirm("Are you sure you want to sign out?")) {
