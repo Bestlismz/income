@@ -10,8 +10,20 @@ import { getTransactions, deleteTransaction } from "@/lib/api"
 import { exportToPDF } from "@/lib/export"
 import { Transaction } from "@/types"
 import { FileDown, Loader2, ExternalLink, Pencil, Trash2, AlertCircle, Filter } from "lucide-react"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Pagination } from "@/components/ui/pagination"
 
@@ -23,6 +35,7 @@ export default function TransactionsPage() {
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null)
   const [viewingImage, setViewingImage] = React.useState<string | null>(null)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [transactionToDelete, setTransactionToDelete] = React.useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = React.useState<string>("all")
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
@@ -44,17 +57,19 @@ export default function TransactionsPage() {
     loadTransactions()
   }, [loadTransactions])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this transaction?")) return
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return
     
-    setDeletingId(id)
+    setDeletingId(transactionToDelete)
     try {
-      await deleteTransaction(id)
+      await deleteTransaction(transactionToDelete)
+      toast.success("Transaction deleted successfully")
       loadTransactions()
     } catch (error: any) {
-      alert(`Failed to delete: ${error.message}`)
+      toast.error(`Failed to delete: ${error.message}`)
     } finally {
       setDeletingId(null)
+      setTransactionToDelete(null)
     }
   }
 
@@ -167,17 +182,21 @@ export default function TransactionsPage() {
           transition={{ duration: 0.4, delay: 0.1 }}
           whileHover={{ scale: 1.03, y: -4 }}
         >
-          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 hover:shadow-lg hover:shadow-green-500/20 transition-shadow">
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 rotate-180" />
-                Income
-              </CardDescription>
-              <CardTitle className="text-lg sm:text-2xl text-green-500 truncate" title={formatCurrency(summary.income)}>
-                {formatCurrency(summary.income)}
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          {isLoading ? (
+            <Skeleton className="h-[104px] w-full rounded-xl" />
+          ) : (
+            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 hover:shadow-lg hover:shadow-green-500/20 transition-shadow">
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 rotate-180" />
+                  Income
+                </CardDescription>
+                <CardTitle className="text-lg sm:text-2xl text-green-500 truncate" title={formatCurrency(summary.income)}>
+                  {formatCurrency(summary.income)}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          )}
         </motion.div>
 
         <motion.div
@@ -186,17 +205,21 @@ export default function TransactionsPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
           whileHover={{ scale: 1.03, y: -4 }}
         >
-          <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20 hover:shadow-lg hover:shadow-red-500/20 transition-shadow">
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Expenses
-              </CardDescription>
-              <CardTitle className="text-lg sm:text-2xl text-red-500 truncate" title={formatCurrency(summary.expenses)}>
-                {formatCurrency(summary.expenses)}
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          {isLoading ? (
+            <Skeleton className="h-[104px] w-full rounded-xl" />
+          ) : (
+            <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20 hover:shadow-lg hover:shadow-red-500/20 transition-shadow">
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Expenses
+                </CardDescription>
+                <CardTitle className="text-lg sm:text-2xl text-red-500 truncate" title={formatCurrency(summary.expenses)}>
+                  {formatCurrency(summary.expenses)}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          )}
         </motion.div>
 
         <motion.div
@@ -206,17 +229,21 @@ export default function TransactionsPage() {
           whileHover={{ scale: 1.03, y: -4 }}
           className="col-span-2 lg:col-span-2"
         >
-          <Card className={`bg-gradient-to-br ${summary.balance >= 0 ? 'from-blue-500/10 to-cyan-500/10 border-blue-500/20 hover:shadow-blue-500/20' : 'from-orange-500/10 to-red-500/10 border-orange-500/20 hover:shadow-orange-500/20'} hover:shadow-lg transition-shadow`}>
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Balance
-              </CardDescription>
-              <CardTitle className={`text-lg sm:text-2xl ${summary.balance >= 0 ? 'text-blue-500' : 'text-orange-500'} truncate`} title={formatCurrency(summary.balance)}>
-                {formatCurrency(summary.balance)}
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          {isLoading ? (
+            <Skeleton className="h-[104px] w-full rounded-xl" />
+          ) : (
+            <Card className={`bg-gradient-to-br ${summary.balance >= 0 ? 'from-blue-500/10 to-cyan-500/10 border-blue-500/20 hover:shadow-blue-500/20' : 'from-orange-500/10 to-red-500/10 border-orange-500/20 hover:shadow-orange-500/20'} hover:shadow-lg transition-shadow`}>
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Balance
+                </CardDescription>
+                <CardTitle className={`text-lg sm:text-2xl ${summary.balance >= 0 ? 'text-blue-500' : 'text-orange-500'} truncate`} title={formatCurrency(summary.balance)}>
+                  {formatCurrency(summary.balance)}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          )}
         </motion.div>
       </div>
 
@@ -286,9 +313,11 @@ export default function TransactionsPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
+               <div className="space-y-4">
+                 {[...Array(5)].map((_, i) => (
+                   <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                 ))}
+               </div>
             ) : filteredTransactions.length === 0 ? (
               <div className="text-center p-8 text-muted-foreground text-sm">
                 {selectedMonth === "all" 
@@ -353,7 +382,7 @@ export default function TransactionsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(transaction.id)}
+                          onClick={() => setTransactionToDelete(transaction.id)}
                           disabled={deletingId === transaction.id}
                           className="flex-1 h-9 text-destructive hover:text-destructive"
                         >
@@ -435,7 +464,7 @@ export default function TransactionsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleDelete(transaction.id)}
+                                onClick={() => setTransactionToDelete(transaction.id)}
                                 disabled={deletingId === transaction.id}
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                               >
@@ -475,9 +504,30 @@ export default function TransactionsPage() {
           transaction={editingTransaction}
           open={!!editingTransaction}
           onOpenChange={(open) => !open && setEditingTransaction(null)}
-          onSuccess={loadTransactions}
+          onSuccess={() => {
+            loadTransactions()
+            toast.success("Transaction updated successfully")
+          }}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the transaction.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Image Viewer */}
       <ImageViewerDialog

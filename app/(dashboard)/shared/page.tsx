@@ -4,6 +4,7 @@ import * as React from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -23,6 +24,17 @@ import { PaymentScheduleTable } from "@/components/shared/payment-schedule-table
 import { EditSharedItemDialog } from "@/components/shared/edit-shared-item-dialog"
 import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
 import { Pagination } from "@/components/ui/pagination"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function SharedPage() {
   const [items, setItems] = React.useState<(SharedItem & { total_paid: number })[]>([])
@@ -32,6 +44,7 @@ export default function SharedPage() {
   const [selectedItem, setSelectedItem] = React.useState<string | null>(null)
   const [paymentSchedule, setPaymentSchedule] = React.useState<PaymentScheduleItem[]>([])
   const [editingItem, setEditingItem] = React.useState<SharedItem | null>(null)
+  const [itemToDelete, setItemToDelete] = React.useState<{id: string, title: string} | null>(null)
   const [viewingImage, setViewingImage] = React.useState<string | null>(null)
   const [receiptFile, setReceiptFile] = React.useState<File | null>(null)
   const [itemPayments, setItemPayments] = React.useState<any[]>([])
@@ -52,6 +65,18 @@ export default function SharedPage() {
   React.useEffect(() => {
     loadItems()
   }, [loadItems])
+
+  const selectedSharedItem = React.useMemo(() => 
+    items.find(i => i.id === selectedItem), 
+  [items, selectedItem])
+
+  React.useEffect(() => {
+    if (selectedSharedItem && paymentDialogOpen) {
+      import('@/lib/api').then(({ getSharedItemDetails }) => {
+        getSharedItemDetails(selectedSharedItem.id).then(setItemPayments).catch(console.error)
+      })
+    }
+  }, [selectedSharedItem, paymentDialogOpen])
 
   const handleCreateItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -84,8 +109,9 @@ export default function SharedPage() {
       setCreateDialogOpen(false)
       setPaymentSchedule([])
       loadItems()
+      toast.success("Shared item created successfully")
     } catch (error: any) {
-      alert(`Failed to create: ${error.message}`)
+      toast.error(`Failed to create: ${error.message}`)
     }
   }
 
@@ -113,8 +139,9 @@ export default function SharedPage() {
       setSelectedItem(null)
       setReceiptFile(null)
       loadItems()
+      toast.success("Payment added successfully")
     } catch (error: any) {
-      alert(`Failed to add payment: ${error.message}`)
+      toast.error(`Failed to add payment: ${error.message}`)
     }
   }
 
@@ -125,21 +152,23 @@ export default function SharedPage() {
       await updateSharedItem(editingItem.id, updates)
       setEditingItem(null)
       loadItems()
+      toast.success("Shared item updated successfully")
     } catch (error: any) {
-      alert(`Failed to update: ${error.message}`)
+      toast.error(`Failed to update: ${error.message}`)
     }
   }
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"? This will also delete all associated payments.`)) {
-      return
-    }
+  const confirmDelete = async () => {
+    if (!itemToDelete) return
 
     try {
-      await deleteSharedItem(id)
+      await deleteSharedItem(itemToDelete.id)
       loadItems()
+      toast.success("Shared item deleted successfully")
     } catch (error: any) {
-      alert(`Failed to delete: ${error.message}`)
+      toast.error(`Failed to delete: ${error.message}`)
+    } finally {
+      setItemToDelete(null)
     }
   }
 
@@ -258,8 +287,10 @@ export default function SharedPage() {
 
       {/* Items Grid */}
       {isLoading ? (
-        <div className="flex justify-center p-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-[280px] rounded-xl" />
+          ))}
         </div>
       ) : items.length === 0 ? (
         <Card>
@@ -312,7 +343,7 @@ export default function SharedPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(item.id, item.title)}
+                        onClick={() => setItemToDelete({ id: item.id, title: item.title })}
                         title="Delete"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -405,18 +436,8 @@ export default function SharedPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               {(() => {
-                const item = items.find(i => i.id === selectedItem)
-                const hasSchedule = item?.payment_schedule && item.payment_schedule.length > 0
-                
-                // Load payments for this item when dialog opens
-                React.useEffect(() => {
-                  if (selectedItem && paymentDialogOpen) {
-                    import('@/lib/api').then(({ getSharedItemDetails }) => {
-                      getSharedItemDetails(selectedItem).then(setItemPayments).catch(console.error)
-                    })
-                  }
-                }, [selectedItem, paymentDialogOpen])
-                
+                const hasSchedule = selectedSharedItem?.payment_schedule && selectedSharedItem.payment_schedule.length > 0
+
                 return hasSchedule ? (
                   <>
                     <div className="space-y-2">
@@ -428,7 +449,7 @@ export default function SharedPage() {
                         required
                         onChange={(e) => {
                           const periodNum = Number(e.target.value)
-                          const period = item.payment_schedule?.find(p => p.month === periodNum)
+                          const period = selectedSharedItem.payment_schedule?.find(p => p.month === periodNum)
                           if (period) {
                             const amountInput = document.getElementById('amount') as HTMLInputElement
                             if (amountInput) {
@@ -438,7 +459,7 @@ export default function SharedPage() {
                         }}
                       >
                         <option value="">Choose a period...</option>
-                        {item.payment_schedule
+                        {selectedSharedItem.payment_schedule
                           ?.filter((period) => {
                             // Only show periods that haven't been fully paid
                             const periodPayments = itemPayments.filter(p => p.period_id === period.month)
@@ -531,6 +552,24 @@ export default function SharedPage() {
           onSave={handleUpdate}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Shared Item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{itemToDelete?.title}&quot;? This will also permanently delete all associated payments and history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Image Viewer */}
       <ImageViewerDialog

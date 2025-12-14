@@ -9,6 +9,17 @@ import { getProfile, updateProfile, uploadAvatar } from "@/lib/profile"
 import { Loader2, User, Mail, Save, Camera } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function ProfilePage() {
   const [profile, setProfile] = React.useState<any>(null)
@@ -20,6 +31,7 @@ export default function ProfilePage() {
     email: "",
     avatar_url: ""
   })
+  const [showSignOutDialog, setShowSignOutDialog] = React.useState(false)
 
   React.useEffect(() => {
     loadProfile()
@@ -66,10 +78,10 @@ export default function ProfilePage() {
       
       // Auto-save avatar
       await updateProfile({ avatar_url: avatarUrl })
-      alert("Avatar updated successfully!")
+      toast.success("Avatar updated successfully!")
       loadProfile()
     } catch (error: any) {
-      alert(`Failed to upload avatar: ${error.message}`)
+      toast.error(`Failed to upload avatar: ${error.message}`)
     } finally {
       setIsUploadingAvatar(false)
     }
@@ -81,14 +93,13 @@ export default function ProfilePage() {
 
     try {
       await updateProfile({
-        full_name: formData.full_name,
         email: formData.email,
         avatar_url: formData.avatar_url
       })
-      alert("Profile updated successfully!")
+      toast.success("Profile updated successfully!")
       loadProfile()
     } catch (error: any) {
-      alert(`Failed to update profile: ${error.message}`)
+      toast.error(`Failed to update profile: ${error.message}`)
     } finally {
       setIsSaving(false)
     }
@@ -213,18 +224,36 @@ export default function ProfilePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
+          <Button
             variant="destructive" 
             className="w-full h-12 text-base sm:h-10 sm:text-sm"
-            onClick={async () => {
-              if (confirm("Are you sure you want to sign out?")) {
-                await fetch('/auth/signout', { method: 'POST' })
-                window.location.href = '/login'
-              }
-            }}
+            onClick={() => setShowSignOutDialog(true)}
           >
             Sign Out
           </Button>
+
+          <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Sign out?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to sign out of your account?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={async () => {
+                    await fetch('/auth/signout', { method: 'POST' })
+                    window.location.href = '/login'
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Sign Out
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>
