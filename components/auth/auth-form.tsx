@@ -69,7 +69,7 @@ export function AuthForm() {
               disabled={isLoading}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-11 border-slate-200 dark:border-slate-800 focus:border-blue-500 dark:focus:border-blue-500 transition-all"
+              className="pl-10 h-11 border-slate-200 dark:border-slate-800 focus:border-blue-500 dark:focus:border-blue-500 transition-all text-slate-900 dark:text-white"
               required
             />
           </div>
@@ -90,7 +90,7 @@ export function AuthForm() {
               disabled={isLoading}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-11 border-slate-200 dark:border-slate-800 focus:border-blue-500 dark:focus:border-blue-500 transition-all"
+              className="pl-10 h-11 border-slate-200 dark:border-slate-800 focus:border-blue-500 dark:focus:border-blue-500 transition-all text-slate-900 dark:text-white"
               required
             />
           </div>
