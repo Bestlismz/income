@@ -154,17 +154,17 @@ export default function SharedPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Shared Expenses</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Shared Expenses</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Track shared payments and balances
           </p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4" />
+            <Button className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
               New Shared Item
             </Button>
           </DialogTrigger>
@@ -277,7 +277,7 @@ export default function SharedPage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedItems.map((item, index) => {
             const remaining = item.total_amount - item.total_paid
             const progress = (item.total_paid / item.total_amount) * 100

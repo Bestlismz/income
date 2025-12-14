@@ -104,9 +104,9 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-6 max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
-        <p className="text-muted-foreground">
+      <div className="text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Profile Settings</h1>
+        <p className="text-sm text-muted-foreground">
           Manage your account information
         </p>
       </div>
@@ -140,12 +140,12 @@ export default function ProfilePage() {
               </div>
               <label
                 htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+                className="absolute bottom-0 right-0 p-3 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
               >
                 {isUploadingAvatar ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
+                  <Loader2 className="h-5 w-5 animate-spin text-primary-foreground" />
                 ) : (
-                  <Camera className="h-4 w-4 text-primary-foreground" />
+                  <Camera className="h-5 w-5 text-primary-foreground" />
                 )}
               </label>
               <input
@@ -196,7 +196,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <Button type="submit" disabled={isSaving} className="w-full">
+            <Button type="submit" disabled={isSaving} className="w-full h-12 text-base sm:h-10 sm:text-sm">
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" />
               Save Changes
@@ -213,8 +213,7 @@ export default function ProfilePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
-            variant="destructive" 
+            className="w-full h-12 text-base sm:h-10 sm:text-sm"
             onClick={async () => {
               if (confirm("Are you sure you want to sign out?")) {
                 await fetch('/auth/signout', { method: 'POST' })

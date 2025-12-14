@@ -209,17 +209,17 @@ export default function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Common tasks at your fingertips</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            <Link href="/transactions">
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Transaction
+          <CardContent className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+            <Link href="/transactions" className="w-full sm:w-auto">
+              <Button className="w-full h-auto py-4 flex flex-col gap-2 items-center justify-center sm:flex-row sm:py-2">
+                <Plus className="h-6 w-6 sm:h-4 sm:w-4" />
+                <span className="text-xs sm:text-sm">Add Transaction</span>
               </Button>
             </Link>
-            <Link href="/shared">
-              <Button variant="outline" className="gap-2">
-                <Users className="h-4 w-4" />
-                New Shared Item
+            <Link href="/shared" className="w-full sm:w-auto">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 items-center justify-center sm:flex-row sm:py-2">
+                <Users className="h-6 w-6 sm:h-4 sm:w-4" />
+                <span className="text-xs sm:text-sm">New Shared Item</span>
               </Button>
             </Link>
           </CardContent>
