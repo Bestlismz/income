@@ -465,12 +465,11 @@ export default function SharedPage() {
                         name="amount"
                         type="number"
                         step="0.01"
-                        placeholder="Select a period first"
+                        placeholder="0.00"
                         required
-                        readOnly
                       />
                       <p className="text-xs text-muted-foreground">
-                        Amount is set based on selected period
+                        Auto-filled from period, but you can change it
                       </p>
                     </div>
                   </>
