@@ -215,6 +215,78 @@ CREATE POLICY "Users can update own savings goals" ON savings_goals
 CREATE POLICY "Users can delete own savings goals" ON savings_goals
   FOR DELETE USING (auth.uid() = user_id);
 
+-- Budgets table
+CREATE TABLE IF NOT EXISTS budgets (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  category TEXT NOT NULL,
+  amount DECIMAL(12, 2) NOT NULL,
+  month DATE NOT NULL, -- First day of the month
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, category, month)
+);
+
+-- Recurring transactions table
+CREATE TABLE IF NOT EXISTS recurring_transactions (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  amount DECIMAL(12, 2) NOT NULL,
+  type TEXT CHECK (type IN ('income', 'expense')) NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT NOT NULL,
+  frequency TEXT CHECK (frequency IN ('daily', 'weekly', 'monthly', 'yearly')) NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  last_generated DATE,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS budgets_user_id_idx ON budgets(user_id);
+CREATE INDEX IF NOT EXISTS budgets_month_idx ON budgets(month DESC);
+CREATE INDEX IF NOT EXISTS recurring_transactions_user_id_idx ON recurring_transactions(user_id);
+
+-- RLS for Budgets
+ALTER TABLE budgets ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own budgets" ON budgets;
+DROP POLICY IF EXISTS "Users can insert own budgets" ON budgets;
+DROP POLICY IF EXISTS "Users can update own budgets" ON budgets;
+DROP POLICY IF EXISTS "Users can delete own budgets" ON budgets;
+
+CREATE POLICY "Users can view own budgets" ON budgets
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own budgets" ON budgets
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own budgets" ON budgets
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own budgets" ON budgets
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS for Recurring Transactions
+ALTER TABLE recurring_transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own recurring transactions" ON recurring_transactions;
+DROP POLICY IF EXISTS "Users can insert own recurring transactions" ON recurring_transactions;
+DROP POLICY IF EXISTS "Users can update own recurring transactions" ON recurring_transactions;
+DROP POLICY IF EXISTS "Users can delete own recurring transactions" ON recurring_transactions;
+
+CREATE POLICY "Users can view own recurring transactions" ON recurring_transactions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own recurring transactions" ON recurring_transactions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own recurring transactions" ON recurring_transactions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own recurring transactions" ON recurring_transactions
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Seed default categories
 INSERT INTO categories (name, color, type, is_default) VALUES
   ('Salary', '#22c55e', 'income', true),

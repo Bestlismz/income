@@ -14,6 +14,7 @@ import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog"
+import { Input } from "@/components/ui/input"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +38,12 @@ export default function TransactionsPage() {
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
   const [transactionToDelete, setTransactionToDelete] = React.useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = React.useState<string>("all")
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [showFilters, setShowFilters] = React.useState(false)
+  const [filterType, setFilterType] = React.useState<"all" | "income" | "expense">("all")
+  const [filterCategories, setFilterCategories] = React.useState<string[]>([])
+  const [minAmount, setMinAmount] = React.useState("")
+  const [maxAmount, setMaxAmount] = React.useState("")
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
 
@@ -94,16 +101,55 @@ export default function TransactionsPage() {
     return Array.from(months).sort().reverse()
   }, [transactions])
 
-  // Filter transactions by selected month
+  // Get unique categories
+  const uniqueCategories = React.useMemo(() => {
+    const cats = new Set<string>()
+    transactions.forEach(t => cats.add(t.category))
+    return Array.from(cats).sort()
+  }, [transactions])
+
+  // Filter transactions
   const filteredTransactions = React.useMemo(() => {
-    if (selectedMonth === "all") return transactions
-    
-    return transactions.filter(t => {
-      const date = new Date(t.date)
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      return monthKey === selectedMonth
-    })
-  }, [transactions, selectedMonth])
+    let filtered = transactions
+
+    // Month filter
+    if (selectedMonth !== "all") {
+      filtered = filtered.filter(t => {
+        const date = new Date(t.date)
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        return monthKey === selectedMonth
+      })
+    }
+
+    // Search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(t => 
+        t.description.toLowerCase().includes(query) ||
+        t.category.toLowerCase().includes(query)
+      )
+    }
+
+    // Type filter
+    if (filterType !== "all") {
+      filtered = filtered.filter(t => t.type === filterType)
+    }
+
+    // Category filter
+    if (filterCategories.length > 0) {
+      filtered = filtered.filter(t => filterCategories.includes(t.category))
+    }
+
+    // Amount range filter
+    if (minAmount) {
+      filtered = filtered.filter(t => Math.abs(t.amount) >= Number(minAmount))
+    }
+    if (maxAmount) {
+      filtered = filtered.filter(t => Math.abs(t.amount) <= Number(maxAmount))
+    }
+
+    return filtered
+  }, [transactions, selectedMonth, searchQuery, filterType, filterCategories, minAmount, maxAmount])
 
   // Calculate summary from filtered transactions
   const summary = React.useMemo(() => {
@@ -253,50 +299,140 @@ export default function TransactionsPage() {
         </motion.div>
       </div>
 
-      {/* Month Filter */}
+      {/* Search & Filters */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
         <Card>
-          <CardContent className="pt-4 sm:pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <Filter className="h-5 w-5 text-muted-foreground hidden sm:block" />
-              <div className="flex-1">
-                <Label htmlFor="month-filter" className="text-sm font-medium mb-2 block">
-                  Filter by Month
-                </Label>
-                <select
-                  id="month-filter"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <option value="all">All Time</option>
-                  {availableMonths.map(month => {
-                    const [year, monthNum] = month.split('-')
-                    const date = new Date(parseInt(year), parseInt(monthNum) - 1)
-                    const monthName = date.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })
-                    return (
-                      <option key={month} value={month}>
-                        {monthName}
-                      </option>
-                    )
-                  })}
-                </select>
+          <CardContent className="pt-4 sm:pt-6 space-y-4">
+            {/* Search Bar */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <Input
+                  placeholder="Search description or category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              {selectedMonth !== "all" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedMonth("all")}
-                  className="text-xs w-full sm:w-auto"
-                >
-                  Clear Filter
-                </Button>
-              )}
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+              </Button>
             </div>
+
+            {/* Advanced Filters */}
+            {showFilters && (
+              <div className="space-y-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Month filter */}
+                  <div className="space-y-2">
+                    <Label>Month</Label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Time</option>
+                      {availableMonths.map(month => {
+                        const [year, monthNum] = month.split('-')
+                        const date = new Date(parseInt(year), parseInt(monthNum) - 1)
+                        const monthName = date.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' })
+                        return <option key={month} value={month}>{monthName}</option>
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Type filter */}
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value as any)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="income">Income Only</option>
+                      <option value="expense">Expense Only</option>
+                    </select>
+                  </div>
+
+                  {/* Min Amount */}
+                  <div className="space-y-2">
+                    <Label>Min Amount (฿)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={minAmount}
+                      onChange={(e) => setMinAmount(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Max Amount */}
+                  <div className="space-y-2">
+                    <Label>Max Amount (฿)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={maxAmount}
+                      onChange={(e) => setMaxAmount(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Category multi-select */}
+                <div className="space-y-2">
+                  <Label>Categories</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueCategories.map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setFilterCategories(prev =>
+                            prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                          )
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                          filterCategories.includes(cat)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary hover:bg-secondary/80'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Clear filters button */}
+                {(searchQuery || selectedMonth !== "all" || filterType !== "all" || filterCategories.length > 0 || minAmount || maxAmount) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery("")
+                      setSelectedMonth("all")
+                      setFilterType("all")
+                      setFilterCategories([])
+                      setMinAmount("")
+                      setMaxAmount("")
+                    }}
+                    className="w-full sm:w-auto"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

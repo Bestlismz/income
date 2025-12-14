@@ -83,6 +83,8 @@ export default function SavingsPage() {
         try {
             const amount = Number(depositAmount)
             const newAmount = depositGoal.current_amount + amount
+            const wasComplete = depositGoal.current_amount >= depositGoal.target_amount
+            const isNowComplete = newAmount >= depositGoal.target_amount
             
             await updateSavingsGoal(depositGoal.id, {
                 current_amount: newAmount
@@ -102,6 +104,19 @@ export default function SavingsPage() {
             console.log("Transaction created successfully:", tx) // DEBUG LOG
             
             toast.success(`Deposited ${formatCurrency(amount)} to ${depositGoal.name}`)
+
+            // Celebrate if goal just completed
+            if (!wasComplete && isNowComplete) {
+                import('canvas-confetti').then((confetti) => {
+                    confetti.default({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    })
+                })
+                toast.success(`🎉 Goal "${depositGoal.name}" completed!`, { duration: 5000 })
+            }
+
             setDepositGoal(null)
             setDepositAmount("")
             loadGoals()

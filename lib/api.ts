@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import { Transaction, SharedItem, Category, SavingsGoal } from '@/types'
+import { Transaction, SharedItem, Category, SavingsGoal, Budget, RecurringTransaction } from '@/types'
 
 function getClient() {
     return createClient()
@@ -419,3 +419,128 @@ export async function deleteSavingsGoal(id: string) {
 
     if (error) throw error
 }
+
+// Budgets
+export async function getBudgets() {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('budgets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('month', { ascending: false })
+
+    if (error) throw error
+    return data as Budget[]
+}
+
+export async function createBudget(budget: Omit<Budget, 'id' | 'created_at' | 'user_id'>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('budgets')
+        .insert({ ...budget, user_id: user.id })
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as Budget
+}
+
+export async function updateBudget(id: string, updates: Partial<Omit<Budget, 'id' | 'created_at' | 'user_id'>>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('budgets')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as Budget
+}
+
+export async function deleteBudget(id: string) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+        .from('budgets')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+}
+
+// Recurring Transactions  
+export async function getRecurringTransactions() {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('recurring_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as RecurringTransaction[]
+}
+
+export async function createRecurringTransaction(transaction: Omit<RecurringTransaction, 'id' | 'created_at' | 'user_id'>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('recurring_transactions')
+        .insert({ ...transaction, user_id: user.id })
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as RecurringTransaction
+}
+
+export async function updateRecurringTransaction(id: string, updates: Partial<Omit<RecurringTransaction, 'id' | 'created_at' | 'user_id'>>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('recurring_transactions')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as RecurringTransaction
+}
+
+export async function deleteRecurringTransaction(id: string) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+        .from('recurring_transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) throw error
+}
+

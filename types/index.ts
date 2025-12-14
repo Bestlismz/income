@@ -59,3 +59,27 @@ export interface SavingsGoal {
     user_id: string
     created_at: string
 }
+
+export interface Budget {
+    id: string
+    user_id: string
+    category: string
+    amount: number
+    month: string // First day of month as ISO string
+    created_at: string
+}
+
+export interface RecurringTransaction {
+    id: string
+    user_id: string
+    amount: number
+    type: 'income' | 'expense'
+    category: string
+    description: string
+    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
+    start_date: string
+    end_date?: string
+    last_generated?: string
+    is_active: boolean
+    created_at: string
+}
