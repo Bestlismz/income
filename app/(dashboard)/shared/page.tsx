@@ -16,7 +16,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { getSharedItems, createSharedItem, addPaymentToSharedItem, updateSharedItem, deleteSharedItem } from "@/lib/api"
-import { exportToExcel } from "@/lib/export"
 import { SharedItem, PaymentScheduleItem } from "@/types"
 import { Plus, Loader2, Wallet, Users, Pencil, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
