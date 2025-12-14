@@ -488,14 +488,14 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                 {paginatedPayments.map((payment, index) => (
                   <motion.div
                     key={payment.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileHover={{ scale: 1.01 }}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
                         {payment.user_avatar ? (
                           <Image
                             src={payment.user_avatar}
@@ -508,15 +508,17 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                           <User className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium">{payment.user_email || 'Unknown User'}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm sm:text-base truncate" title={payment.user_email || 'Unknown User'}>
+                          {payment.user_email || 'Unknown User'}
+                        </p>
                         {payment.description && (
-                          <p className="text-xs text-muted-foreground italic">{payment.description}</p>
+                          <p className="text-xs text-muted-foreground italic line-clamp-2">{payment.description}</p>
                         )}
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                           {new Date(payment.paid_at).toLocaleDateString('th-TH', {
                             year: 'numeric',
-                            month: 'long',
+                            month: 'short',
                             day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
@@ -525,15 +527,15 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
                         {payment.receipt_url && (
                           <button
                             onClick={() => setViewingImage(payment.receipt_url)}
-                            className="text-xs text-blue-500 hover:underline mt-1"
+                            className="text-xs text-blue-500 hover:underline mt-1 flex items-center gap-1"
                           >
                             📎 View Receipt
                           </button>
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-green-500">
+                    <div className="text-left sm:text-right flex-shrink-0">
+                      <p className="text-lg sm:text-xl font-bold text-green-500 whitespace-nowrap">
                         {formatCurrency(payment.amount)}
                       </p>
                     </div>
