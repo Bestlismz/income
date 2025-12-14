@@ -176,9 +176,9 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push('/shared')}>
             <ArrowLeft className="h-4 w-4" />
@@ -188,12 +188,13 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
             <p className="text-muted-foreground">Shared expense details</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport}>
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
             <FileDown className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button onClick={() => setPaymentDialogOpen(true)}>
+          <Button onClick={() => setPaymentDialogOpen(true)} className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4 mr-2" />
             Add Payment
           </Button>
@@ -201,7 +202,8 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      {/* Summary Cards */}
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -211,7 +213,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
           <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20 hover:shadow-lg hover:shadow-blue-500/20 transition-shadow">
             <CardHeader className="pb-2">
               <CardDescription>Total Amount</CardDescription>
-              <CardTitle className="text-2xl text-blue-500">
+              <CardTitle className="text-xl sm:text-2xl text-blue-500">
                 {formatCurrency(item.total_amount)}
               </CardTitle>
             </CardHeader>
@@ -226,7 +228,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
           <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 hover:shadow-lg hover:shadow-green-500/20 transition-shadow">
             <CardHeader className="pb-2">
               <CardDescription>Total Paid</CardDescription>
-              <CardTitle className="text-2xl text-green-500">
+              <CardTitle className="text-xl sm:text-2xl text-green-500">
                 {formatCurrency(item.total_paid)}
               </CardTitle>
             </CardHeader>
@@ -241,7 +243,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
           <Card className={`bg-gradient-to-br ${remaining > 0 ? 'from-orange-500/10 to-red-500/10 border-orange-500/20 hover:shadow-orange-500/20' : 'from-green-500/10 to-emerald-500/10 border-green-500/20 hover:shadow-green-500/20'} hover:shadow-lg transition-shadow`}>
             <CardHeader className="pb-2">
               <CardDescription>Remaining</CardDescription>
-              <CardTitle className={`text-2xl ${remaining > 0 ? 'text-orange-500' : 'text-green-500'}`}>
+              <CardTitle className={`text-xl sm:text-2xl ${remaining > 0 ? 'text-orange-500' : 'text-green-500'}`}>
                 {formatCurrency(remaining)}
               </CardTitle>
             </CardHeader>
@@ -258,7 +260,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
           <Card className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/20 transition-shadow">
             <CardHeader className="pb-2">
               <CardDescription>Overpay</CardDescription>
-              <CardTitle className="text-2xl text-orange-500">
+              <CardTitle className="text-xl sm:text-2xl text-orange-500">
                 {(() => {
                   // Sum all overpayments from each period (no deductions)
                   let totalOverpay = 0
@@ -289,7 +291,7 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
               <Card className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/20 transition-shadow">
                 <CardHeader className="pb-2">
                   <CardDescription>Principal Left</CardDescription>
-                  <CardTitle className="text-2xl text-indigo-500">
+                  <CardTitle className="text-xl sm:text-2xl text-indigo-500">
                     {(() => {
                       const breakdown = calculateTotals(payments, item.principal_amount!, item.interest_amount!)
                       return formatCurrency(item.principal_amount - breakdown.totalPrincipalPaid)
