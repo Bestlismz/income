@@ -268,72 +268,7 @@ export default function TransactionsPage() {
         </Card>
       </motion.div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          whileHover={{ scale: 1.02, y: -4 }}
-        >
-          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 transition-shadow hover:shadow-lg hover:shadow-green-500/20">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-xs sm:text-sm">Total Income</CardDescription>
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                <CardTitle className="text-xl sm:text-2xl text-green-500">
-                  {formatCurrency(summary.income)}
-                </CardTitle>
-              </motion.div>
-            </CardHeader>
-          </Card>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          whileHover={{ scale: 1.02, y: -4 }}
-        >
-          <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20 transition-shadow hover:shadow-lg hover:shadow-red-500/20">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-xs sm:text-sm">Total Expenses</CardDescription>
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-              >
-                <CardTitle className="text-xl sm:text-2xl text-red-500">
-                  {formatCurrency(summary.expenses)}
-                </CardTitle>
-              </motion.div>
-            </CardHeader>
-          </Card>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          whileHover={{ scale: 1.02, y: -4 }}
-        >
-          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20 transition-shadow hover:shadow-lg hover:shadow-blue-500/20">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-xs sm:text-sm">Balance</CardDescription>
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-              >
-                <CardTitle className={`text-xl sm:text-2xl ${summary.balance >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
-                  {formatCurrency(summary.balance)}
-                </CardTitle>
-              </motion.div>
-            </CardHeader>
-          </Card>
-        </motion.div>
-      </div>
+
 
       {/* Transactions List */}
       <motion.div
