@@ -358,6 +358,20 @@ export async function deleteCategory(id: string) {
     if (error) throw error
 }
 
+export async function deleteCategories(ids: string[]) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+        .from('categories')
+        .delete()
+        .in('id', ids)
+        .eq('user_id', user.id) // Can only delete own categories
+
+    if (error) throw error
+}
+
 // Savings Goals
 export async function getSavingsGoals() {
     const supabase = getClient()

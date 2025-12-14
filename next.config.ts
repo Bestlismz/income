@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  allowedDevOrigins: ["localhost:3000", "192.168.1.179:3000"],
+  experimental: {
+  },
   // Add empty turbopack config to silence the warning
   turbopack: {},
 };

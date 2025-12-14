@@ -73,7 +73,7 @@ export function CategoryDialog({ category, open, onOpenChange, onSuccess, trigge
     const formData = new FormData(e.currentTarget)
     
     try {
-      if (category) {
+      if (category && !category.is_default) {
         await updateCategory(category.id, {
           name: formData.get('name') as string,
           color,
@@ -81,13 +81,14 @@ export function CategoryDialog({ category, open, onOpenChange, onSuccess, trigge
         })
         toast.success("Category updated successfully")
       } else {
+        // Create new category (for new or editing default)
         await createCategory({
           name: formData.get('name') as string,
           color,
           type,
           icon: 'Circle' // Default icon for now
         })
-        toast.success("Category created successfully")
+        toast.success(category && category.is_default ? "Category customized successfully" : "Category created successfully")
       }
       
       setIsOpen(false)
@@ -113,7 +114,7 @@ export function CategoryDialog({ category, open, onOpenChange, onSuccess, trigge
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{category ? 'Edit Category' : 'Create Category'}</DialogTitle>
+            <DialogTitle>{category ? (category.is_default ? 'Customize Category' : 'Edit Category') : 'Create Category'}</DialogTitle>
             <DialogDescription>
               {category ? 'Edit the details of this category.' : 'Add a new category to organize your finances.'}
             </DialogDescription>
