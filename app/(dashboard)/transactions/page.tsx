@@ -136,12 +136,12 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transactions</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage your income and expenses
           </p>
         </div>
@@ -150,9 +150,10 @@ export default function TransactionsPage() {
             variant="outline"
             onClick={handleExport}
             disabled={filteredTransactions.length === 0}
+            className="flex-1 sm:flex-none"
           >
-            <FileDown className="h-4 w-4" />
-            Export
+            <FileDown className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
           <AddTransactionDialog onSuccess={loadTransactions} />
         </div>
@@ -165,9 +166,9 @@ export default function TransactionsPage() {
         transition={{ duration: 0.3 }}
       >
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Filter className="h-5 w-5 text-muted-foreground" />
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <Filter className="h-5 w-5 text-muted-foreground hidden sm:block" />
               <div className="flex-1">
                 <Label htmlFor="month-filter" className="text-sm font-medium mb-2 block">
                   Filter by Month
@@ -176,7 +177,7 @@ export default function TransactionsPage() {
                   id="month-filter"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="flex h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="all">All Time</option>
                   {availableMonths.map(month => {
@@ -196,7 +197,7 @@ export default function TransactionsPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setSelectedMonth("all")}
-                  className="text-xs"
+                  className="text-xs w-full sm:w-auto"
                 >
                   Clear Filter
                 </Button>
@@ -207,7 +208,7 @@ export default function TransactionsPage() {
       </motion.div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -216,13 +217,13 @@ export default function TransactionsPage() {
         >
           <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 transition-shadow hover:shadow-lg hover:shadow-green-500/20">
             <CardHeader className="pb-2">
-              <CardDescription>Total Income</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Total Income</CardDescription>
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                <CardTitle className="text-2xl text-green-500">
+                <CardTitle className="text-xl sm:text-2xl text-green-500">
                   {formatCurrency(summary.income)}
                 </CardTitle>
               </motion.div>
@@ -237,13 +238,13 @@ export default function TransactionsPage() {
         >
           <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20 transition-shadow hover:shadow-lg hover:shadow-red-500/20">
             <CardHeader className="pb-2">
-              <CardDescription>Total Expenses</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Total Expenses</CardDescription>
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
               >
-                <CardTitle className="text-2xl text-red-500">
+                <CardTitle className="text-xl sm:text-2xl text-red-500">
                   {formatCurrency(summary.expenses)}
                 </CardTitle>
               </motion.div>
@@ -258,13 +259,13 @@ export default function TransactionsPage() {
         >
           <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20 transition-shadow hover:shadow-lg hover:shadow-blue-500/20">
             <CardHeader className="pb-2">
-              <CardDescription>Balance</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Balance</CardDescription>
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
               >
-                <CardTitle className={`text-2xl ${summary.balance >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
+                <CardTitle className={`text-xl sm:text-2xl ${summary.balance >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
                   {formatCurrency(summary.balance)}
                 </CardTitle>
               </motion.div>
@@ -273,7 +274,7 @@ export default function TransactionsPage() {
         </motion.div>
       </div>
 
-      {/* Transactions Table */}
+      {/* Transactions List */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -281,8 +282,8 @@ export default function TransactionsPage() {
       >
         <Card>
           <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Transaction History</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} recorded
               {selectedMonth !== "all" && " (filtered)"}
             </CardDescription>
@@ -293,92 +294,169 @@ export default function TransactionsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : filteredTransactions.length === 0 ? (
-              <div className="text-center p-8 text-muted-foreground">
+              <div className="text-center p-8 text-muted-foreground text-sm">
                 {selectedMonth === "all" 
                   ? "No transactions yet. Add your first transaction to get started!"
                   : "No transactions found for this month."}
               </div>
             ) : (
-              <div className="relative overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-xs uppercase bg-muted/50">
-                    <tr>
-                      <th className="px-6 py-3 text-left">Date</th>
-                      <th className="px-6 py-3 text-left">Description</th>
-                      <th className="px-6 py-3 text-left">Category</th>
-                      <th className="px-6 py-3 text-right">Amount</th>
-                      <th className="px-6 py-3 text-center">Receipt</th>
-                      <th className="px-6 py-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedTransactions.map((transaction, index) => (
-                      <motion.tr 
-                        key={transaction.id} 
-                        className="border-b hover:bg-muted/30 transition-colors"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.02)" }}
-                      >
-                        <td className="px-6 py-4">
-                          {new Date(transaction.date).toLocaleDateString('th-TH')}
-                        </td>
-                        <td className="px-6 py-4 font-medium">{transaction.description}</td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 py-1 rounded-full text-xs bg-secondary">
+              <>
+                {/* Mobile Card View */}
+                <div className="block sm:hidden space-y-3">
+                  {paginatedTransactions.map((transaction, index) => (
+                    <motion.div
+                      key={transaction.id}
+                      className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{transaction.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(transaction.date).toLocaleDateString('th-TH', { 
+                              day: 'numeric', 
+                              month: 'short', 
+                              year: 'numeric' 
+                            })}
+                          </p>
+                          <span className="inline-block mt-2 px-2 py-1 rounded-full text-xs bg-secondary">
                             {transaction.category}
                           </span>
-                        </td>
-                        <td className={`px-6 py-4 text-right font-bold ${
-                          transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
-                        }`}>
-                          {formatCurrency(transaction.amount)}
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          {transaction.receipt_url ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setViewingImage(transaction.receipt_url!)}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className={`text-lg font-bold whitespace-nowrap ${
+                            transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                          }`}>
+                            {formatCurrency(transaction.amount)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 pt-3 border-t">
+                        {transaction.receipt_url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewingImage(transaction.receipt_url!)}
+                            className="flex-1 h-9"
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Receipt
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingTransaction(transaction)}
+                          className="flex-1 h-9"
+                        >
+                          <Pencil className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(transaction.id)}
+                          disabled={deletingId === transaction.id}
+                          className="flex-1 h-9 text-destructive hover:text-destructive"
+                        >
+                          {deletingId === transaction.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <>
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </>
                           )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setEditingTransaction(transaction)}
-                              className="h-8 w-8"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(transaction.id)}
-                              disabled={deletingId === transaction.id}
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                            >
-                              {deletingId === transaction.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block relative overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-xs uppercase bg-muted/50">
+                      <tr>
+                        <th className="px-6 py-3 text-left">Date</th>
+                        <th className="px-6 py-3 text-left">Description</th>
+                        <th className="px-6 py-3 text-left">Category</th>
+                        <th className="px-6 py-3 text-right">Amount</th>
+                        <th className="px-6 py-3 text-center">Receipt</th>
+                        <th className="px-6 py-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedTransactions.map((transaction, index) => (
+                        <motion.tr 
+                          key={transaction.id} 
+                          className="border-b hover:bg-muted/30 transition-colors"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.02)" }}
+                        >
+                          <td className="px-6 py-4">
+                            {new Date(transaction.date).toLocaleDateString('th-TH')}
+                          </td>
+                          <td className="px-6 py-4 font-medium">{transaction.description}</td>
+                          <td className="px-6 py-4">
+                            <span className="px-2 py-1 rounded-full text-xs bg-secondary">
+                              {transaction.category}
+                            </span>
+                          </td>
+                          <td className={`px-6 py-4 text-right font-bold ${
+                            transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                          }`}>
+                            {formatCurrency(transaction.amount)}
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            {transaction.receipt_url ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setViewingImage(transaction.receipt_url!)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditingTransaction(transaction)}
+                                className="h-8 w-8"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(transaction.id)}
+                                disabled={deletingId === transaction.id}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                              >
+                                {deletingId === transaction.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
 
             {/* Pagination */}
