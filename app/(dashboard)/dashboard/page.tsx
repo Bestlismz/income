@@ -133,7 +133,7 @@ export default function DashboardPage() {
                 <TrendingUp className="h-4 w-4" />
                 Total Income
               </CardDescription>
-              <CardTitle className="text-xl sm:text-2xl text-green-500">
+              <CardTitle className="text-lg sm:text-2xl text-green-500 truncate" title={formatCurrency(stats.income)}>
                 {formatCurrency(stats.income)}
               </CardTitle>
             </CardHeader>
@@ -152,7 +152,7 @@ export default function DashboardPage() {
                 <TrendingDown className="h-4 w-4" />
                 Total Expenses
               </CardDescription>
-              <CardTitle className="text-2xl text-red-500">
+              <CardTitle className="text-lg sm:text-2xl text-red-500 truncate" title={formatCurrency(stats.expenses)}>
                 {formatCurrency(stats.expenses)}
               </CardTitle>
             </CardHeader>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
                 <Wallet className="h-4 w-4" />
                 Balance
               </CardDescription>
-              <CardTitle className={`text-2xl ${stats.balance >= 0 ? 'text-blue-500' : 'text-orange-500'}`}>
+              <CardTitle className={`text-lg sm:text-2xl ${stats.balance >= 0 ? 'text-blue-500' : 'text-orange-500'} truncate`} title={formatCurrency(stats.balance)}>
                 {formatCurrency(stats.balance)}
               </CardTitle>
             </CardHeader>
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                 <Users className="h-4 w-4" />
                 Shared Remaining
               </CardDescription>
-              <CardTitle className="text-2xl text-purple-500">
+              <CardTitle className="text-lg sm:text-2xl text-purple-500 truncate" title={formatCurrency(stats.sharedRemaining)}>
                 {formatCurrency(stats.sharedRemaining)}
               </CardTitle>
             </CardHeader>

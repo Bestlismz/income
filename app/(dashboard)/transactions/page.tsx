@@ -159,6 +159,67 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          whileHover={{ scale: 1.03, y: -4 }}
+        >
+          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 hover:shadow-lg hover:shadow-green-500/20 transition-shadow">
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 rotate-180" />
+                Income
+              </CardDescription>
+              <CardTitle className="text-lg sm:text-2xl text-green-500 truncate" title={formatCurrency(summary.income)}>
+                {formatCurrency(summary.income)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          whileHover={{ scale: 1.03, y: -4 }}
+        >
+          <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20 hover:shadow-lg hover:shadow-red-500/20 transition-shadow">
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Expenses
+              </CardDescription>
+              <CardTitle className="text-lg sm:text-2xl text-red-500 truncate" title={formatCurrency(summary.expenses)}>
+                {formatCurrency(summary.expenses)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          whileHover={{ scale: 1.03, y: -4 }}
+          className="col-span-2 lg:col-span-2"
+        >
+          <Card className={`bg-gradient-to-br ${summary.balance >= 0 ? 'from-blue-500/10 to-cyan-500/10 border-blue-500/20 hover:shadow-blue-500/20' : 'from-orange-500/10 to-red-500/10 border-orange-500/20 hover:shadow-orange-500/20'} hover:shadow-lg transition-shadow`}>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Balance
+              </CardDescription>
+              <CardTitle className={`text-lg sm:text-2xl ${summary.balance >= 0 ? 'text-blue-500' : 'text-orange-500'} truncate`} title={formatCurrency(summary.balance)}>
+                {formatCurrency(summary.balance)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </motion.div>
+      </div>
+
       {/* Month Filter */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
