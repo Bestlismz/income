@@ -60,8 +60,15 @@ export default function ProfilePage() {
           })
         }
       }
-    } catch (error) {
-      console.error("Failed to load profile:", error)
+    } catch (error: any) {
+      console.error("Error loading profile:", error)
+      console.error("Error specifics:", {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint
+      })
+      toast.error("Failed to load profile")
     } finally {
       setIsLoading(false)
     }
@@ -213,6 +220,51 @@ export default function ProfilePage() {
               Save Changes
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Settings</CardTitle>
+          <CardDescription>Manage your app preferences</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            variant="outline"
+            className="w-full justify-start h-12 text-base"
+            onClick={() => window.location.href = '/savings'}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><path d="M16 11h0"/></svg>
+              </div>
+              <span>Savings Goals</span>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start h-12 text-base"
+            onClick={() => window.location.href = '/analytics'}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </div>
+              <span>Advanced Analytics</span>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start h-12 text-base"
+            onClick={() => window.location.href = '/categories'}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41-1.41l6.59-6.59a1 1 0 0 0 1.41-1.41V2Z"/><path d="M7 7h.01"/></svg>
+              </div>
+              <span>Manage Categories</span>
+            </div>
+          </Button>
         </CardContent>
       </Card>
 

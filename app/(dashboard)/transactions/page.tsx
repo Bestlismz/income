@@ -47,7 +47,13 @@ export default function TransactionsPage() {
       setTransactions(data)
     } catch (error: any) {
       console.error("Failed to load transactions:", error)
-      setError(error.message || "Failed to load transactions")
+      console.error("Error specifics:", {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint
+      })
+      toast.error("Failed to load transactions")
     } finally {
       setIsLoading(false)
     }
@@ -346,7 +352,11 @@ export default function TransactionsPage() {
                               year: 'numeric' 
                             })}
                           </p>
-                          <span className="inline-block mt-2 px-2 py-1 rounded-full text-xs bg-secondary">
+                          <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs ${
+                            transaction.category === 'Savings' 
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 ring-1 ring-blue-500/50' 
+                              : 'bg-secondary'
+                          }`}>
                             {transaction.category}
                           </span>
                         </div>
@@ -428,7 +438,11 @@ export default function TransactionsPage() {
                           </td>
                           <td className="px-6 py-4 font-medium">{transaction.description}</td>
                           <td className="px-6 py-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-secondary">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              transaction.category === 'Savings' 
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 ring-1 ring-blue-500/50' 
+                                : 'bg-secondary'
+                            }`}>
                               {transaction.category}
                             </span>
                           </td>

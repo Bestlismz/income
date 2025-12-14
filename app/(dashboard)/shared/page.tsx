@@ -55,8 +55,15 @@ export default function SharedPage() {
     try {
       const data = await getSharedItems()
       setItems(data)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load shared items:", error)
+      console.error("Error specifics:", {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint
+      })
+      toast.error("Failed to load shared items")
     } finally {
       setIsLoading(false)
     }

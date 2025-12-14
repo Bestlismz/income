@@ -39,8 +39,14 @@ export default function DashboardPage() {
         ])
         setTransactions(txData)
         setSharedItems(sharedData)
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to load dashboard data:", error)
+        console.error("Error specifics:", {
+            message: error?.message,
+            code: error?.code,
+            details: error?.details,
+            hint: error?.hint
+        })
       } finally {
         setIsLoading(false)
       }

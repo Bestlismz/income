@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { toast } from "sonner"
 import { getSharedItems, getSharedItemDetails, addPaymentToSharedItem } from "@/lib/api"
 import { exportSharedItemToPDF } from "@/lib/export-shared"
 import { SharedItem, PaymentScheduleItem } from "@/types"
@@ -54,8 +55,15 @@ export default function SharedItemDetailPage({ params }: { params: Promise<{ id:
         setItem(currentItem)
       }
       setPayments(paymentsData)
-    } catch (error) {
-      console.error("Failed to load data:", error)
+    } catch (error: any) {
+      console.error("Failed to load details:", error)
+      console.error("Error specifics:", {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint
+      })
+      toast.error("Failed to load details")
     } finally {
       setIsLoading(false)
     }

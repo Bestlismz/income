@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus, Loader2, Upload } from "lucide-react"
-import { addTransaction, uploadReceipt } from "@/lib/api"
+import { addTransaction, uploadReceipt, getCategories } from "@/lib/api"
+import { Category } from "@/types"
 
 export function AddTransactionDialog({ onSuccess }: { onSuccess?: () => void }) {
   const [open, setOpen] = React.useState(false)
@@ -28,6 +29,23 @@ export function AddTransactionDialog({ onSuccess }: { onSuccess?: () => void }) 
     date: new Date().toISOString().split('T')[0],
     type: "expense"
   })
+  const [categories, setCategories] = React.useState<Category[]>([])
+
+  React.useEffect(() => {
+    getCategories().then(setCategories).catch(console.error)
+  }, [])
+  
+  const availableCategories = categories.filter(c => c.type === formData.type)
+
+  React.useEffect(() => {
+    // Reset category if type changes and current category is not valid for new type
+    if (formData.category) {
+        const isValid = availableCategories.some(c => c.name === formData.category)
+        if (!isValid) {
+            setFormData(prev => ({ ...prev, category: "" }))
+        }
+    }
+  }, [formData.type, availableCategories])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -151,13 +169,18 @@ export function AddTransactionDialog({ onSuccess }: { onSuccess?: () => void }) 
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Input
+              <select
                 id="category"
-                placeholder="e.g., Food"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}
                 required
-              />
+              >
+                <option value="" disabled>Select category</option>
+                {availableCategories.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

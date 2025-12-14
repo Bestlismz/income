@@ -147,47 +147,133 @@ CREATE POLICY "Users can delete own receipts" ON storage.objects
     bucket_id = 'receipts' AND
     auth.uid()::text = (storage.foldername(name))[1]
   );
+-- Categories table
+CREATE TABLE IF NOT EXISTS categories (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  color TEXT NOT NULL,
+  icon TEXT,
+  type TEXT CHECK (type IN ('income', 'expense')) NOT NULL,
+  is_default BOOLEAN DEFAULT false,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(name, user_id)
+);
+
+-- Savings goals table
+CREATE TABLE IF NOT EXISTS savings_goals (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT NOT NULL,
+  target_amount DECIMAL(12, 2) NOT NULL,
+  current_amount DECIMAL(12, 2) DEFAULT 0,
+  deadline DATE,
+  color TEXT NOT NULL,
+  icon TEXT,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS categories_user_id_idx ON categories(user_id);
+CREATE INDEX IF NOT EXISTS savings_goals_user_id_idx ON savings_goals(user_id);
+
+-- RLS for Categories
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own categories" ON categories;
+DROP POLICY IF EXISTS "Users can insert own categories" ON categories;
+DROP POLICY IF EXISTS "Users can update own categories" ON categories;
+DROP POLICY IF EXISTS "Users can delete own categories" ON categories;
+DROP POLICY IF EXISTS "Users can view default categories" ON categories;
+
+CREATE POLICY "Users can view own categories" ON categories
+  FOR SELECT USING (auth.uid() = user_id OR is_default = true);
+
+CREATE POLICY "Users can insert own categories" ON categories
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own categories" ON categories
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own categories" ON categories
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS for Savings Goals
+ALTER TABLE savings_goals ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own savings goals" ON savings_goals;
+DROP POLICY IF EXISTS "Users can insert own savings goals" ON savings_goals;
+DROP POLICY IF EXISTS "Users can update own savings goals" ON savings_goals;
+DROP POLICY IF EXISTS "Users can delete own savings goals" ON savings_goals;
+
+CREATE POLICY "Users can view own savings goals" ON savings_goals
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own savings goals" ON savings_goals
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own savings goals" ON savings_goals
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own savings goals" ON savings_goals
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Seed default categories
+INSERT INTO categories (name, color, type, is_default) VALUES
+  ('Salary', '#22c55e', 'income', true),
+  ('Freelance', '#3b82f6', 'income', true),
+  ('Business', '#a855f7', 'income', true),
+  ('Food', '#ef4444', 'expense', true),
+  ('Transportation', '#f97316', 'expense', true),
+  ('Housing', '#eab308', 'expense', true),
+  ('Entertainment', '#db2777', 'expense', true),
+  ('Shopping', '#8b5cf6', 'expense', true),
+  ('Health', '#14b8a6', 'expense', true),
+  ('Bills', '#f43f5e', 'expense', true),
+  ('Education', '#6366f1', 'expense', true),
+  ('Other', '#64748b', 'expense', true)
+ON CONFLICT (name) DO NOTHING;
 `
 
 export async function GET() {
-    try {
-        const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-        // Execute the schema
-        const { error } = await supabase.rpc('exec_sql', { sql: schema })
+    // Execute the schema
+    const { error } = await supabase.rpc('exec_sql', { sql: schema })
 
-        if (error) {
-            // If RPC doesn't exist, return instructions
-            return NextResponse.json({
-                success: false,
-                message: 'Please run the schema manually in Supabase SQL Editor',
-                instructions: [
-                    '1. Go to https://supabase.com/dashboard',
-                    '2. Select your project',
-                    '3. Go to SQL Editor',
-                    '4. Copy the schema from supabase/schema.sql',
-                    '5. Paste and run it'
-                ],
-                error: error.message
-            }, { status: 500 })
-        }
-
-        return NextResponse.json({
-            success: true,
-            message: 'Database schema created successfully!'
-        })
-    } catch (error: any) {
-        return NextResponse.json({
-            success: false,
-            message: 'Auto-migration not supported. Please run schema manually.',
-            instructions: [
-                '1. Go to https://supabase.com/dashboard',
-                '2. Select your project',
-                '3. Go to SQL Editor',
-                '4. Copy the schema from supabase/schema.sql',
-                '5. Paste and run it'
-            ],
-            error: error.message
-        }, { status: 500 })
+    if (error) {
+      // If RPC doesn't exist, return instructions
+      return NextResponse.json({
+        success: false,
+        message: 'Please run the schema manually in Supabase SQL Editor',
+        instructions: [
+          '1. Go to https://supabase.com/dashboard',
+          '2. Select your project',
+          '3. Go to SQL Editor',
+          '4. Copy the schema from supabase/schema.sql',
+          '5. Paste and run it'
+        ],
+        error: error.message
+      }, { status: 500 })
     }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Database schema created successfully!'
+    })
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      message: 'Auto-migration not supported. Please run schema manually.',
+      instructions: [
+        '1. Go to https://supabase.com/dashboard',
+        '2. Select your project',
+        '3. Go to SQL Editor',
+        '4. Copy the schema from supabase/schema.sql',
+        '5. Paste and run it'
+      ],
+      error: error.message
+    }, { status: 500 })
+  }
 }

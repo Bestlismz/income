@@ -37,3 +37,25 @@ export interface SharedPayment {
     amount: number
     paid_at: string
 }
+
+export interface Category {
+    id: string
+    name: string
+    color: string
+    icon?: string
+    type: 'income' | 'expense'
+    is_default: boolean
+    user_id?: string
+}
+
+export interface SavingsGoal {
+    id: string
+    name: string
+    target_amount: number
+    current_amount: number
+    deadline?: string
+    color: string
+    icon?: string
+    user_id: string
+    created_at: string
+}

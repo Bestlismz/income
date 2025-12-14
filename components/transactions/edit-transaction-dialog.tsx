@@ -13,8 +13,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Upload } from "lucide-react"
-import { updateTransaction, uploadReceipt } from "@/lib/api"
-import { Transaction } from "@/types"
+import { updateTransaction, uploadReceipt, getCategories } from "@/lib/api"
+import { Transaction, Category } from "@/types"
 
 interface EditTransactionDialogProps {
   transaction: Transaction
@@ -39,6 +39,13 @@ export function EditTransactionDialog({
     date: transaction.date,
     type: transaction.type
   })
+  const [categories, setCategories] = React.useState<Category[]>([])
+
+  React.useEffect(() => {
+    getCategories().then(setCategories).catch(console.error)
+  }, [])
+  
+  const availableCategories = categories.filter(c => c.type === formData.type)
 
   React.useEffect(() => {
     setFormData({
@@ -155,12 +162,18 @@ export function EditTransactionDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-category">Category</Label>
-              <Input
+              <select
                 id="edit-category"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}
                 required
-              />
+              >
+                <option value="" disabled>Select category</option>
+                {availableCategories.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

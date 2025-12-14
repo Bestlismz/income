@@ -35,6 +35,7 @@ export function Navigation({ user }: NavigationProps) {
   const links = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/transactions", label: "Transactions", icon: Receipt },
+    { href: "/savings", label: "Savings", icon: Wallet },
     { href: "/shared", label: "Shared", icon: Users },
     { href: "/profile", label: "Profile", icon: User },
   ]
@@ -62,7 +63,7 @@ export function Navigation({ user }: NavigationProps) {
               
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-1">
-              {links.slice(0, 3).map((link) => {
+              {links.slice(0, 4).map((link) => {
                 const Icon = link.icon
                 const isActive = pathname === link.href
                 
@@ -135,7 +136,7 @@ export function Navigation({ user }: NavigationProps) {
 
       {/* Bottom Navigation - Mobile Only */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 backdrop-blur-lg pb-safe">
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-5 h-16">
           {links.map((link) => {
             const Icon = link.icon
             const isActive = pathname === link.href

@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import { Transaction, SharedItem } from '@/types'
+import { Transaction, SharedItem, Category, SavingsGoal } from '@/types'
 
 function getClient() {
     return createClient()
@@ -16,6 +16,7 @@ export async function getTransactions() {
         .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
 
     if (error) throw error
     return data as Transaction[]
@@ -291,6 +292,130 @@ export async function deleteSharedItem(id: string) {
         .delete()
         .eq('id', id)
         .eq('created_by', user.id)
+
+    if (error) throw error
+}
+
+// Categories
+export async function getCategories() {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .or(`user_id.eq.${user.id},is_default.eq.true`)
+        .order('name')
+
+    if (error) throw error
+    return data as Category[]
+}
+
+export async function createCategory(category: Omit<Category, 'id' | 'created_at' | 'user_id' | 'is_default'>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('categories')
+        .insert({ ...category, user_id: user.id, is_default: false })
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as Category
+}
+
+export async function updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'user_id' | 'is_default'>>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('categories')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as Category
+}
+
+export async function deleteCategory(id: string) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id) // Can only delete own categories
+
+    if (error) throw error
+}
+
+// Savings Goals
+export async function getSavingsGoals() {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('savings_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as SavingsGoal[]
+}
+
+export async function createSavingsGoal(goal: Omit<SavingsGoal, 'id' | 'created_at' | 'user_id'>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('savings_goals')
+        .insert({ ...goal, user_id: user.id })
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as SavingsGoal
+}
+
+export async function updateSavingsGoal(id: string, updates: Partial<Omit<SavingsGoal, 'id' | 'created_at' | 'user_id'>>) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('savings_goals')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+    if (error) throw error
+    return data as SavingsGoal
+}
+
+export async function deleteSavingsGoal(id: string) {
+    const supabase = getClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+        .from('savings_goals')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
 
     if (error) throw error
 }
